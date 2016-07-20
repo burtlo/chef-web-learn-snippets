@@ -1,0 +1,34 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure(2) do |config|
+
+  config.vm.box = "bento/centos-7.2"
+
+  # cache rules everything around me
+  if Vagrant.has_plugin?("vagrant-cachier")
+    config.cache.scope = :box
+    config.cache.auto_detect = true
+  end
+
+  config.vm.define "centos-7.2" do |cs|
+
+    cs.vm.hostname = "centos-7.2"
+    cs.vm.network "private_network", ip: "172.31.54.50"
+
+    cs.vm.provider "virtualbox" do |v|
+      v.memory = 512
+      v.cpus = 1
+    end
+
+    cs.vm.provision "chef_solo" do |chef|
+      chef.channel = "stable"
+      chef.version = "12.12.15"
+      chef.cookbooks_path = "vendored-cookbooks"
+      chef.add_recipe "learn_the_basics_rhel"
+      chef.log_level = "fatal"
+      chef.json = {
+      }
+    end
+  end
+end
