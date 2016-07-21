@@ -37,7 +37,7 @@ action :create do
   # Update the manifest.
   new_item = {
     id: id,
-    snippet_tag: "<% code_snippet(current_page, '#{snippet_file}', '#{id}') %>",
+    snippet_tag: "<% code_snippet('#{snippet_file}', '#{id}') %>",
     language: language_from_file_name,
     path: file_name,
     file: code_file(base_code_filename, ::File.extname(file_name))

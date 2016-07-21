@@ -37,7 +37,7 @@ action :run do
   # Update the manifest.
   new_item = {
     id: id,
-    snippet_tag: "<% command_snippet(current_page, '#{snippet_file}', '#{id}') %>",
+    snippet_tag: "<% command_snippet('#{snippet_file}', '#{id}') %>",
     language: shell,
     path: cwd,
     exit_code: result.exitstatus,
