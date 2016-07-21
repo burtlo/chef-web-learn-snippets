@@ -1,52 +1,29 @@
 module LearnChef
   module SnippetHelpers
 
-  def current_snippet_path
-    @@snippet_path
+  def snippet_options
+    @@options
   end
 
-  def current_snippet_file
-    @@snippet_file
-  end
-
-  def current_cwd
-    @@cwd
-  end
-
-  def with_snippet_path(snippet_path, &block)
-    old_snippet_path = @@snippet_path
-    @@snippet_path = File.join(node.default['snippets']['root_directory'], snippet_path)
+  def with_snippet_options(options, &block)
+    old_options = {}
+    options.each do |k,v|
+      old_options[k] = @@options[k]
+      @@options[k] = v
+    end
     if block_given?
-        begin
-          yield
-        ensure
-          @@snippet_path = old_snippet_path
+      begin
+        yield
+      ensure
+        old_options.each do |k,v|
+          @@options[k] = v
         end
       end
+    end
   end
 
-  def with_snippet_file(snippet_file, &block)
-    old_snippet_file = @@snippet_file
-    @@snippet_file = snippet_file
-    if block_given?
-        begin
-          yield
-        ensure
-          @@snippet_file = old_snippet_file
-        end
-      end
-  end
-
-  def with_cwd(cwd, &block)
-    old_cwd = @@cwd
-    @@cwd = cwd
-    if block_given?
-        begin
-          yield
-        ensure
-          @@cwd = old_cwd
-        end
-      end
+  def snippets_root
+    node.default['snippets']['root_directory']
   end
 
   # Generates a unique but consistent base filename for stdout, stderr, and code files.
@@ -67,16 +44,14 @@ module LearnChef
 
   # Inserts the new item into the manifest.
   def update_manifest(manifest, new_item)
-    manifest[:snippets].delete_if {|h| h[:name] == snippet_id } unless manifest[:snippets].empty?
+    manifest[:snippets].delete_if {|h| h[:id] == id } unless manifest[:snippets].empty?
     manifest[:snippets].push new_item
-    manifest[:snippets].sort! { |x, y| y[:name] <=> x[:name] }
+    manifest[:snippets].sort! { |x, y| y[:id] <=> x[:id] }
     manifest.to_yaml(line_width: -1)
   end
 
   private
 
-  @@snippet_path = nil
-  @@snippet_file = nil
-  @@cwd = nil
+  @@options = {}
 
 end; end

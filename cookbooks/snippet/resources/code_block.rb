@@ -1,19 +1,16 @@
 include LearnChef::SnippetHelpers
 include Chef::Mixin::ShellOut
 
-property :file_name, String, required: true, name_property: true
-property :language, [ String, nil ], default: nil
+property :id, String, required: true, name_property: true
+property :file_name, String, required: true
 property :snippet_path, [ String, nil ], default: nil
 property :snippet_file, [ String, nil ], default: nil
-property :snippet_id, String, default: 'default'
-#property :content, String, required: true
 property :source_file, String, required: true
 
 def initialize(*args)
   super
-  @snippet_path = @snippet_path || current_snippet_path
-  @snippet_file = @snippet_file || current_snippet_file
-  @language = language_from_extension(::File.extname(file_name))
+  @snippet_path ||= snippet_options[:snippet_path]
+  @snippet_file ||= snippet_options[:snippet_file]
 end
 
 action :create do
@@ -21,9 +18,7 @@ action :create do
   directory ::File.dirname(file_name) do
     recursive true
   end
-  # file ::File.expand_path(file_name) do
-  #   content content
-  # end
+
   cookbook_file ::File.expand_path(file_name) do
     source source_file
   end
@@ -32,7 +27,7 @@ action :create do
   manifest_filename = ::File.join(snippet_path, snippet_file) + '.yml'
 
   # Generate a base filename to store the file.
-  base_code_filename = make_base_filename(snippet_file + snippet_id)
+  base_code_filename = make_base_filename(snippet_file + id)
 
   # Ensure snippet directory exists.
   directory snippet_path do
@@ -41,11 +36,11 @@ action :create do
 
   # Update the manifest.
   new_item = {
-    name: snippet_id,
-    canonical_tag: "<% code_snippet(current_page, '#{snippet_file}', '#{snippet_id}') %>",
-    language: language,
+    id: id,
+    snippet_tag: "<% code_snippet(current_page, '#{snippet_file}', '#{id}') %>",
+    language: language_from_file_name,
     path: file_name,
-    codefile: code_file(base_code_filename, ::File.extname(file_name))
+    file: code_file(base_code_filename, ::File.extname(file_name))
   }
   manifest = update_manifest(load_manifest(manifest_filename), new_item)
 
@@ -65,11 +60,16 @@ def code_file(base, ext)
   base + ext
 end
 
-def language_from_extension(ext)
-  case ext
+def language_from_file_name
+  language = nil
+  case ::File.extname(file_name)
   when '.rb'
-    'ruby'
-  else
-    raise "Unknown file extenion '#{ext}'."
+    language = 'ruby'
   end
+
+  # Perhaps no extension. Special case based on filename.
+  # TODO
+
+  raise "Unknown language for '#{file_name}'." unless language
+  language
 end

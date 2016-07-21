@@ -48,6 +48,16 @@ namespace :vagrant do
   task :provision, :scenario do |_t, args|
     sh "cd scenarios/#{args[:scenario]} && vagrant provision"
   end
+
+  desc 'vagrant reload a scanario'
+  task :reload, :scenario do |_t, args|
+    sh "cd scenarios/#{args[:scenario]} && vagrant reload"
+  end
+
+  desc 'vagrant halt a scanario'
+  task :halt, :scenario do |_t, args|
+    sh "cd scenarios/#{args[:scenario]} && vagrant halt"
+  end
 end
 
 namespace :scenario do
@@ -83,8 +93,8 @@ namespace :scenario do
   desc 'Resumes an active scanario'
   task :resume, :scenario do |_t, args|
     scenario = args[:scenario]
-    # Vendor in updated cookbooks and reprovision.
-    tasks = %w[cookbook:vendor vagrant:provision]
+    # Vendor in updated cookbooks, reload, and reprovision.
+    tasks = %w[cookbook:vendor vagrant:reload vagrant:provision]
     tasks.each do |task|
       Rake::Task[task].invoke(scenario)
       Rake::Task[task].reenable
