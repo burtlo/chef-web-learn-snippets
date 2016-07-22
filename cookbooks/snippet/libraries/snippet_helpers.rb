@@ -32,6 +32,26 @@ module LearnChef
     Digest::SHA256.hexdigest(s)[0..7]
   end
 
+  # Loads the test config file for the project.
+  def load_config(filename)
+    require 'yaml'
+    if ::File.exist?(filename)
+      YAML.load_file(filename)
+    else
+      { build_date: '', machines: [] }
+    end
+  end
+
+  # Inserts the new item into the config.
+  def update_config(config, new_item)
+    require 'date'
+    config[:build_date] = Date.today.to_s
+    config[:machines].delete_if {|h| h[:name] == new_item[:name] } unless config[:machines].empty?
+    config[:machines].push new_item
+    config[:machines].sort! { |x, y| y[:name] <=> x[:name] }
+    config.to_yaml(line_width: -1)
+  end
+
   # Loads the manifest file, or generates the content for a new manifest if the file does not exist.
   def load_manifest(filename)
     require 'yaml'
