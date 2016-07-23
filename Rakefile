@@ -58,6 +58,16 @@ namespace :vagrant do
   task :halt, :scenario do |_t, args|
     sh "cd scenarios/#{args[:scenario]} && vagrant halt"
   end
+
+  desc 'vagrant status a scanario'
+  task :status, :scenario do |_t, args|
+    sh "cd scenarios/#{args[:scenario]} && vagrant status"
+  end
+
+  desc 'upgrade vagrant boxes for scenario'
+  task :upgrade, :scenario do |_t, args|
+    sh "cd scenarios/#{args[:scenario]} vagrant destroy && vagrant up --no-provision && vagrant box update"
+  end
 end
 
 namespace :scenario do
@@ -82,7 +92,7 @@ namespace :scenario do
   desc 'Starts a scanario'
   task :start, :scenario do |_t, args|
     scenario = args[:scenario]
-    tasks = %w[vagrant:destroy snippets:delete cookbook:vendor vagrant:up vagrant:provision]
+    tasks = %w[vagrant:destroy snippets:delete cookbook:vendor vagrant:up]
     tasks.each do |task|
       Rake::Task[task].invoke(scenario)
       Rake::Task[task].reenable
@@ -116,6 +126,7 @@ def copy_files(from, to, level = 0)
       puts (exists ? "[X]".pink : "[C]".green) + indent + (level == 0 ? target : File.basename(target)) + "/"
       files_copied += copy_files(path, target, level + 1)
     else
+      next if x.end_with?('.raw')
       exists = File.exist?(target)
       identical = exists && FileUtils.identical?(path, target)
       unless identical

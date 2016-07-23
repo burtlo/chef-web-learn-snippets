@@ -50,6 +50,25 @@ action :run do
     content manifest
   end
 
+  # Write raw output (helpful for debugging, not copied over).
+
+  # Write stdin.
+  file ::File.join(snippet_path, stdin_file(base_outstr_filename)) + '.raw' do
+    content translate_command + "\n"
+  end
+
+  # Write stdout.
+  file ::File.join(snippet_path, stdout_file(base_outstr_filename)) + '.raw' do
+    content result.stdout
+  end
+
+  # Write stderr.
+  file ::File.join(snippet_path, stderr_file(base_outstr_filename)) + '.raw' do
+    content result.stderr
+  end
+
+  # Write cleaned snippet output.
+
   # Write stdin.
   file ::File.join(snippet_path, stdin_file(base_outstr_filename)) do
     content '$ ' + command + "\n"
