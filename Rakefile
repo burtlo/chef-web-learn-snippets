@@ -68,6 +68,11 @@ namespace :vagrant do
   task :upgrade, :scenario do |_t, args|
     sh "cd scenarios/#{args[:scenario]} vagrant destroy && vagrant up --no-provision && vagrant box update"
   end
+
+  desc 'vagrant ssh into a box'
+  task :ssh, :scenario, :vm do |_t, args|
+    sh "cd scenarios/#{args[:scenario]} && vagrant ssh #{args[:vm]}"
+  end
 end
 
 namespace :scenario do

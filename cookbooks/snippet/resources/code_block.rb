@@ -61,15 +61,29 @@ def code_file(base, ext)
 end
 
 def language_from_file_name
-  language = nil
-  case ::File.extname(file_name)
-  when '.rb'
-    language = 'ruby'
+  language = map_language(file_name)
+
+  if language.nil?
+    # Perhaps no extension. Special case based on filename.
+    # TODO
+    raise "Unknown language for '#{file_name}'."
   end
 
-  # Perhaps no extension. Special case based on filename.
-  # TODO
-
-  raise "Unknown language for '#{file_name}'." unless language
   language
+end
+
+def map_language(file_name)
+  file_ext = ::File.extname(file_name)
+  case file_ext
+  when '.rb'
+    'ruby'
+  when '.html'
+    'html'
+  when '.erb'
+    # Strip .erb extension and get language for base name.
+    file_name2 = ::File.basename(file_name, file_ext)
+    map_language(file_name2)
+  else
+    nil
+  end
 end

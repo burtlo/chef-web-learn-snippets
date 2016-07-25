@@ -23,6 +23,9 @@ action :run do
   result = shell_out(command_for_shell(translate_command), cwd: ::File.expand_path(cwd))
   result.error! if abort_on_failure
 
+  # Clean the output.
+  clean_stdout = clean_output(result.stdout)
+
   # This is the file that holds the manifest.
   manifest_filename = ::File.join(snippet_path, snippet_file) + '.yml'
 
@@ -75,7 +78,7 @@ action :run do
   end
 
   # Transform output streams.
-  stdout = trim_output(result.stdout, trim_stdout)
+  stdout = trim_output(clean_stdout, trim_stdout)
   stderr = trim_output(result.stderr, trim_stderr)
 
   # Write stdout.
@@ -117,7 +120,7 @@ end
 def trim_output(output, regions)
   if regions
     [regions].flatten.each do |region|
-      match_string = /(#{region[:from]}).+(#{region[:to]})/m
+      match_string = /(#{region[:from]}).*?(#{region[:to]})/m
       output.gsub!(match_string, "\1#{region[:replace_with] || "[TRIMMED_OUTPUT]"}\2")
     end
   end
@@ -145,4 +148,17 @@ def translate_chef_client_command
     recipe_file = ''
   end
   (tokens.join(' ') + ' --no-color --log_level warn --force-formatter ' + recipe_file).rstrip
+end
+
+# Commands such as `chef` colorize output and don't provide a way to suppress colorization.
+# Example:
+#   [32m- create new directory cookbooks/learn_chef_httpd/templates/default[0m
+# becomes:
+#   - create new directory cookbooks/learn_chef_httpd/templates/default
+def clean_output(output)
+  if command =~ /^chef\s/
+    output.gsub(/\[\d+m$/, '').gsub(/^(.*)\[\d+m/, '\1')
+  else
+    output
+  end
 end
