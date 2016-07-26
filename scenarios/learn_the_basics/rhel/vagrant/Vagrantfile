@@ -7,5 +7,5 @@ end
 
 vagrantfiles = %w[Vagrantfile.centos-72-chefdk]
 vagrantfiles.each do |vagrantfile|
-  load File.join(File.expand_path('../../vagrant'), vagrantfile)
+  load File.join(File.expand_path('../../../../vagrant'), vagrantfile)
 end

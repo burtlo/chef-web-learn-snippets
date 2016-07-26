@@ -1,15 +1,20 @@
+require 'yaml'
+
 namespace :cookbook do
   desc 'Vendor cookbooks for a scanario'
   task :vendor, :scenario do |_t, args|
     scenario = args[:scenario]
     # Vendor cookbooks from:
-    # cookbooks/#{scenario}
+    # cookbooks/#{cookbook} <= load cookbook from config file
     # to:
     # scenarios/#{scenario}/vendored-cookbooks
-    source_cookbook_path = "cookbooks/#{scenario}"
     sh "rm -rf scenarios/#{scenario}/vendored-cookbooks"
-    sh "rm -rf #{source_cookbook_path}/Berksfile.lock"
-    sh "berks vendor -b #{source_cookbook_path}/Berksfile scenarios/#{scenario}/vendored-cookbooks"
+    config = YAML.load_file("scenarios/#{scenario}/config.yml")
+    config[:cookbooks].each do |cookbook|
+      source_cookbook_path = "cookbooks/#{cookbook}"
+      sh "rm -rf #{source_cookbook_path}/Berksfile.lock"
+      sh "berks vendor -b #{source_cookbook_path}/Berksfile scenarios/#{scenario}/vendored-cookbooks"
+    end
   end
 end
 
@@ -79,7 +84,13 @@ namespace :scenario do
   desc 'Lists all scenarios'
   task :list do |_t, args|
     find_scenarios.each do |s|
-      puts s
+      puts s[:scenario].pink
+      s[:platforms].each do |p|
+        puts "  " + p[:platform].yellow
+        p[:virtualizations].each do |v|
+          puts "    " + v.green
+        end
+      end
     end
   end
 
@@ -144,14 +155,46 @@ def copy_files(from, to, level = 0)
   files_copied
 end
 
+def find_virtualizations(platform_path)
+  virtualizations = []
+  Dir.foreach(platform_path) do |x|
+    path = File.join(platform_path, x)
+    if x.start_with? "."
+      next
+    elsif File.directory?(path)
+      virtualizations.push x
+    end
+  end
+  virtualizations
+end
+
+def find_platforms(scenario_path)
+  platforms = []
+  Dir.foreach(scenario_path) do |x|
+    path = File.join(scenario_path, x)
+    if x.start_with? "."
+      next
+    elsif File.directory?(path)
+      platforms.push ({
+        platform: x,
+        virtualizations: find_virtualizations(path)
+      })
+    end
+  end
+  platforms
+end
+
 def find_scenarios
   scenarios = []
   Dir.foreach('scenarios') do |x|
     path = File.join('scenarios', x)
-    if x == "." or x == ".."
+    if x.start_with? "."
       next
     elsif File.directory?(path)
-      scenarios.push x
+      scenarios.push ({
+        scenario: x,
+        platforms: find_platforms(path)
+      })
     end
   end
   scenarios
