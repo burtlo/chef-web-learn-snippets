@@ -1,79 +1,83 @@
 include LearnChef::SnippetHelpers
 include Chef::Mixin::ShellOut
 
+# Uniquely identifies the code file.
 property :id, String, required: true, name_property: true
-property :file_name, String, required: true
-property :snippet_path, [ String, nil ], default: nil
-property :snippet_file, [ String, nil ], default: nil
-property :source_file, String, required: true
+property :tutorial, [ String, nil ], default: nil
+property :platform, [ String, nil ], default: nil
+property :virtualization, [ String, nil ], default: nil
+property :lesson, [ String, nil ], default: nil
+property :step, [ String, nil ], default: nil
+# The destination file path for replaying the sceanrio.
+property :file_path, String, required: true
+# The source cookbook filename.
+property :source_filename, String, required: true
 
 def initialize(*args)
   super
-  @snippet_path ||= snippet_options[:snippet_path]
-  @snippet_file ||= snippet_options[:snippet_file]
+  @tutorial ||= snippet_options[:tutorial]
+  @platform ||= snippet_options[:platform]
+  @virtualization ||= snippet_options[:virtualization]
+  @lesson ||= snippet_options[:lesson]
+  @step ||= snippet_options[:step]
 end
 
 action :create do
-  # Copy the file locally.
-  directory ::File.dirname(file_name) do
-    recursive true
-  end
+  # Where we place files for playing the scenario.
+  scenario_full_path = ::File.expand_path(file_path)
+  scenario_directory_name = ::File.dirname(scenario_full_path)
 
-  cookbook_file ::File.expand_path(file_name) do
-    source source_file
-  end
+  # Where we place snippet files.
+  snippet_partial_path = ::File.join(tutorial, platform, virtualization, lesson, step, id)
+  snippet_full_path = ::File.join(snippets_root_dir, snippet_partial_path)
+  snippet_metadata_filename = ::File.join(snippet_full_path, 'metadata.yml')
+  snippet_code_partial_path = ::File.join(snippet_partial_path, ::File.basename(file_path))
+  snippet_code_fullpath = ::File.join(snippet_full_path, ::File.basename(file_path))
 
-  # This is the file that holds the manifest.
-  manifest_filename = ::File.join(snippet_path, snippet_file) + '.yml'
-
-  # Generate a base filename to store the file.
-  base_code_filename = make_base_filename(snippet_file + id)
-
-  # Ensure snippet directory exists.
-  directory snippet_path do
-    recursive true
-  end
-
-  # Update the manifest.
-  new_item = {
-    id: id,
-    snippet_tag: "<% code_snippet('#{snippet_file}', '#{id}') %>",
-    language: language_from_file_name,
-    path: file_name,
-    file: code_file(base_code_filename, ::File.extname(file_name))
+  # Metadata about the snippet.
+  metadata = {
+    snippet_tag: "<% code_snippet('#{snippet_partial_path}') %>",
+    language: language_from_file_path,
+    display_path: file_path,
+    file: ::File.basename(snippet_code_fullpath)
   }
-  manifest = update_manifest(load_manifest(manifest_filename), new_item)
 
-  # Write manifest.
-  file manifest_filename do
-    content manifest
+  # Copy the file locally.
+  directory scenario_directory_name do
+    recursive true
+  end
+  cookbook_file scenario_full_path do
+    source source_filename
+  end
+
+  # Write metadata.
+  directory ::File.dirname(snippet_metadata_filename) do
+    recursive true
+  end
+  file snippet_metadata_filename do
+    content metadata.to_yaml(line_width: -1)
   end
 
   # Write codefile snippet.
-  cookbook_file ::File.join(snippet_path, code_file(base_code_filename, ::File.extname(file_name))) do
-    source source_file
+  cookbook_file snippet_code_fullpath do
+    source source_filename
   end
 end
 
-# Generates a code filename.
-def code_file(base, ext)
-  base + ext
-end
-
-def language_from_file_name
-  language = map_language(file_name)
+def language_from_file_path
+  language = map_language(file_path)
 
   if language.nil?
     # Perhaps no extension. Special case based on filename.
     # TODO
-    raise "Unknown language for '#{file_name}'."
+    raise "Unknown language for '#{file_path}'."
   end
 
   language
 end
 
-def map_language(file_name)
-  file_ext = ::File.extname(file_name)
+def map_language(file_path)
+  file_ext = ::File.extname(file_path)
   case file_ext
   when '.rb'
     'ruby'
@@ -81,8 +85,8 @@ def map_language(file_name)
     'html'
   when '.erb'
     # Strip .erb extension and get language for base name.
-    file_name2 = ::File.basename(file_name, file_ext)
-    map_language(file_name2)
+    file_path2 = ::File.basename(file_path, file_ext)
+    map_language(file_path2)
   else
     nil
   end

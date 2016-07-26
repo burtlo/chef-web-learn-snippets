@@ -2,10 +2,13 @@ include LearnChef::SnippetHelpers
 include Chef::Mixin::ShellOut
 
 property :id, String, required: true, name_property: true
+property :tutorial, [ String, nil ], default: nil
+property :platform, [ String, nil ], default: nil
+property :virtualization, [ String, nil ], default: nil
+property :lesson, [ String, nil ], default: nil
+property :step, [ String, nil ], default: nil
 property :command, String, required: true
 property :shell, String, default: 'bash'
-property :snippet_path, [ String, nil ], default: nil
-property :snippet_file, [ String, nil ], default: nil
 property :cwd, [ String, nil ], default: nil
 property :trim_stdout, [ Array, Hash, nil ], default: nil
 property :trim_stderr, [ Array, Hash, nil ], default: nil
@@ -13,12 +16,27 @@ property :abort_on_failure, [ TrueClass, FalseClass ], default: false
 
 def initialize(*args)
   super
-  @snippet_path ||= snippet_options[:snippet_path]
-  @snippet_file ||= snippet_options[:snippet_file]
+  @tutorial ||= snippet_options[:tutorial]
+  @platform ||= snippet_options[:platform]
+  @virtualization ||= snippet_options[:virtualization]
+  @lesson ||= snippet_options[:lesson]
+  @step ||= snippet_options[:step]
   @cwd = @cwd || snippet_options[:cwd] || '~'
 end
 
 action :run do
+  # Where we place snippet files.
+  snippet_partial_path = ::File.join(tutorial, platform, virtualization, lesson, step, id)
+  snippet_full_path = ::File.join(snippets_root_dir, snippet_partial_path)
+  snippet_metadata_filename = ::File.join(snippet_full_path, 'metadata.yml')
+
+  # Metadata about the snippet.
+  metadata = {
+    snippet_tag: "<% command_snippet('#{snippet_partial_path}') %>",
+    language: shell,
+    display_path: cwd
+  }
+
   # Run the command.
   result = shell_out(command_for_shell(translate_command), cwd: ::File.expand_path(cwd))
   result.error! if abort_on_failure
@@ -26,54 +44,40 @@ action :run do
   # Clean the output.
   clean_stdout = clean_output(result.stdout)
 
-  # This is the file that holds the manifest.
-  manifest_filename = ::File.join(snippet_path, snippet_file) + '.yml'
-
-  # Generate a base filename to store stdout and stderr.
-  base_outstr_filename = make_base_filename(snippet_file + id)
-
-  # Ensure snippet directory exists.
-  directory snippet_path do
+  # Write metadata.
+  directory ::File.dirname(snippet_metadata_filename) do
     recursive true
   end
-
-  # Update the manifest.
-  new_item = {
-    id: id,
-    snippet_tag: "<% command_snippet('#{snippet_file}', '#{id}') %>",
-    language: shell,
-    path: cwd,
-    exit_code: result.exitstatus,
-    output_base: base_outstr_filename
-  }
-  manifest = update_manifest(load_manifest(manifest_filename), new_item)
-
-  # Write manifest.
-  file manifest_filename do
-    content manifest
+  file snippet_metadata_filename do
+    content metadata.to_yaml(line_width: -1)
   end
 
   # Write raw output (helpful for debugging, not copied over).
 
   # Write stdin.
-  file ::File.join(snippet_path, stdin_file(base_outstr_filename)) + '.raw' do
+  file ::File.join(snippet_full_path, 'stdin.raw') do
     content translate_command + "\n"
   end
 
   # Write stdout.
-  file ::File.join(snippet_path, stdout_file(base_outstr_filename)) + '.raw' do
+  file ::File.join(snippet_full_path, 'stdout.raw') do
     content result.stdout
   end
 
   # Write stderr.
-  file ::File.join(snippet_path, stderr_file(base_outstr_filename)) + '.raw' do
+  file ::File.join(snippet_full_path, 'stderr.raw') do
     content result.stderr
+  end
+
+  # Write exitstatus.
+  file ::File.join(snippet_full_path, 'exitstatus.raw') do
+    content result.exitstatus.to_s
   end
 
   # Write cleaned snippet output.
 
   # Write stdin.
-  file ::File.join(snippet_path, stdin_file(base_outstr_filename)) do
+  file ::File.join(snippet_full_path, 'stdin') do
     content '$ ' + command + "\n"
   end
 
@@ -82,29 +86,14 @@ action :run do
   stderr = trim_output(result.stderr, trim_stderr)
 
   # Write stdout.
-  file ::File.join(snippet_path, stdout_file(base_outstr_filename)) do
+  file ::File.join(snippet_full_path, 'stdout') do
     content stdout
   end
 
   # Write stderr.
-  file ::File.join(snippet_path, stderr_file(base_outstr_filename)) do
+  file ::File.join(snippet_full_path, 'stderr') do
     content stderr
   end
-end
-
-# Generates a stdin filename.
-def stdin_file(base)
-  base + ".stdin"
-end
-
-# Generates a stdout filename.
-def stdout_file(base)
-  base + ".stdout"
-end
-
-# Generates a stderr filename.
-def stderr_file(base)
-  base + ".stderr"
 end
 
 # Generates the final command to run in the current shell.

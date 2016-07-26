@@ -6,11 +6,15 @@
 
 package 'tree'
 
+with_snippet_options(tutorial: 'learn-the-basics', platform: 'rhel', virtualization: node['snippets']['virtualization']) do
+
 # Write config file.
-snippet_config File.join(snippets_root, 'learn-the-basics/rhel')
+snippet_config 'learn-the-basics'
 
 include_recipe 'learn_the_basics_rhel::set-up-your-own-server'
 include_recipe 'learn_the_basics_rhel::get-set-up'
 include_recipe 'learn_the_basics_rhel::configure-a-resource'
 include_recipe 'learn_the_basics_rhel::configure-a-package-and-service'
 include_recipe 'learn_the_basics_rhel::make-your-recipe-more-manageable'
+
+end
