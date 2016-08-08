@@ -33,7 +33,7 @@ namespace :snippets do
       puts "#{copy_files(from, to)} files copied."
     else
       puts "Set the SNIPPET_DIRECTORY environment variable to the root of your snippets directory. Example:"
-      puts "$ export SNIPPET_DIRECTORY=~/Development/cia/chef-web-learn/snippets"
+      puts "$".green + " export SNIPPET_DIRECTORY=~/Development/cia/chef-web-learn/snippets"
     end
   end
 end
@@ -139,17 +139,30 @@ def copy_files(from, to, level = 0)
     elsif File.directory?(path)
       exists = Dir.exist?(target)
       Dir.mkdir(target) unless exists
-      puts (exists ? "[X]".pink : "[C]".green) + indent + (level == 0 ? target : File.basename(target)) + "/"
+      puts (exists ? "[I]".pink : "[C]".green) + indent + (level == 0 ? target : File.basename(target)) + "/"
       files_copied += copy_files(path, target, level + 1)
     else
-      next if x.end_with?('.raw')
+      next if x.end_with?('.raw') # skip these files
       exists = File.exist?(target)
+      # Check if file has zero length.
+      if File.size(path) == 0
+        if exists
+          # Delete file from target - we're replacing it with one with zero length.
+          FileUtils.rm(target)
+          puts "[D]".red + indent + x
+        else
+          # Skip the file.
+          puts "[0]".red + indent + x
+        end
+        next
+      end
+
       identical = exists && FileUtils.identical?(path, target)
       unless identical
         FileUtils.copy(path, target)
         files_copied += 1
       end
-      puts (identical ? "[X]".pink : exists ? "[U]".yellow : "[C]".green) + indent + x
+      puts (identical ? "[I]".pink : exists ? "[U]".yellow : "[C]".green) + indent + x
     end
   end
   files_copied

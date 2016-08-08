@@ -20,10 +20,10 @@ with_snippet_options(cwd: '~/chef-repo', step: 'create-a-cookbook') do
 
   snippet_execute 'chef-generate-cookbook' do
     command 'chef generate cookbook cookbooks/learn_chef_httpd'
-    trim_stdout ({
-      from: /\s+\* template\[\/root\/chef-repo\/cookbooks\/learn_chef_httpd\/metadata\.rb.*?restore selinux security context/m,
-      to: /\* directory\[\/root\/chef-repo\/cookbooks\/learn_chef_httpd\/recipes\] action create.*?restore selinux security context/m
-      })
+    # trim_stdout ({
+    #   from: /\s+\* template\[\/root\/chef-repo\/cookbooks\/learn_chef_httpd\/metadata\.rb.*?restore selinux security context/m,
+    #   to: /\* directory\[\/root\/chef-repo\/cookbooks\/learn_chef_httpd\/recipes\] action create.*?restore selinux security context/m
+    #   })
   end
 
   snippet_execute 'tree-cookbook' do

@@ -7,3 +7,4 @@ long_description 'Installs/Configures learn_the_basics_rhel'
 version '0.1.0'
 
 depends 'snippet'
+depends 'workstation'

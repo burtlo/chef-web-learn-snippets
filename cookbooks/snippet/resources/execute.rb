@@ -7,12 +7,15 @@ property :platform, [ String, nil ], default: nil
 property :virtualization, [ String, nil ], default: nil
 property :lesson, [ String, nil ], default: nil
 property :step, [ String, nil ], default: nil
+property :workstation_platform, [ String, nil ], default: nil
 property :command, String, required: true
-property :shell, String, default: 'bash'
+property :shell, [ String, nil ], default: nil
 property :cwd, [ String, nil ], default: nil
 property :trim_stdout, [ Array, Hash, nil ], default: nil
+property :remove_lines_matching, [ Array, String, Regexp, nil ], default: nil
 property :trim_stderr, [ Array, Hash, nil ], default: nil
-property :abort_on_failure, [ TrueClass, FalseClass ], default: false
+property :abort_on_failure, [ TrueClass, FalseClass ], default: true
+property :prompt_character, [ String, nil ], default: nil
 
 def initialize(*args)
   super
@@ -21,28 +24,44 @@ def initialize(*args)
   @virtualization ||= snippet_options[:virtualization]
   @lesson ||= snippet_options[:lesson]
   @step ||= snippet_options[:step]
-  @cwd = @cwd || snippet_options[:cwd] || '~'
+  @cwd ||= (snippet_options[:cwd] || '~')
+  @prompt_character ||= (snippet_options[:prompt_character] || '$')
+  @workstation_platform ||= (snippet_options[:workstation_platform] || node['platform'])
+  @shell ||= (snippet_options[:shell] || 'bash')
 end
 
 action :run do
   # Where we place snippet files.
-  snippet_partial_path = ::File.join(tutorial, platform, virtualization, lesson, step, id)
+  snippet_partial_path = ::File.join(tutorial, platform, virtualization, lesson, step, id + "-#{workstation_platform}")
   snippet_full_path = ::File.join(snippets_root_dir, snippet_partial_path)
   snippet_metadata_filename = ::File.join(snippet_full_path, 'metadata.yml')
 
   # Metadata about the snippet.
   metadata = {
-    snippet_tag: "<% command_snippet('#{snippet_partial_path}') %>",
+    snippet_tag: "<% command_snippet(page: current_page, path: '#{::File.join(step, id)}') %>",
     language: shell,
     display_path: cwd
   }
 
   # Run the command.
-  result = shell_out(command_for_shell(translate_command), cwd: ::File.expand_path(cwd))
+  options = {}
+  options[:cwd] = ::File.expand_path(cwd)
+  #env = env_for_platform
+  # if node['platform'] == 'windows'
+  #   options[:env] = {
+  #     "PATH" => powershell_out("[System.Environment]::GetEnvironmentVariable('PATH','Machine')").stdout
+  #   }
+  # end
+  #options[:env] = env if env
+  if shell == 'powershell'
+    result = powershell_out(translate_command, options)
+  else
+    result = shell_out(translate_command, options)
+  end
   result.error! if abort_on_failure
 
   # Clean the output.
-  clean_stdout = clean_output(result.stdout)
+  clean_stdout = clean_output(result.stdout.dup)
 
   # Write metadata.
   directory ::File.dirname(snippet_metadata_filename) do
@@ -78,11 +97,12 @@ action :run do
 
   # Write stdin.
   file ::File.join(snippet_full_path, 'stdin') do
-    content '$ ' + command + "\n"
+    content "#{prompt_character} " + command + "\n"
   end
 
   # Transform output streams.
   stdout = trim_output(clean_stdout, trim_stdout)
+  stdout = remove_lines(stdout, remove_lines_matching) if remove_lines_matching
   stderr = trim_output(result.stderr, trim_stderr)
 
   # Write stdout.
@@ -96,24 +116,43 @@ action :run do
   end
 end
 
-# Generates the final command to run in the current shell.
-def command_for_shell(cmd)
-  case shell
-  when 'bash'
-    cmd
-  when 'ps', 'powershell'
-    "powershell.exe -Command \"#{cmd}\""
-  end
-end
+# # Generates the final command to run in the current shell.
+# def command_for_shell(cmd)
+#   case shell
+#   when 'bash'
+#     cmd
+#   when 'powershell'
+#     cmd
+#   when 'ps', 'powershell'
+#     require 'securerandom'
+#     ::Dir.mkdir("C:\\vagrant\\scripts") unless ::Dir.exist?("C:\\vagrant\\scripts")
+#     filename = "C:\\vagrant\\scripts\\#{SecureRandom.hex[0..7]}.ps1"
+#     ::File.write(filename, <<-EOH
+# Push-Location "#{::File.expand_path(cwd)}"
+# [Environment]::CurrentDirectory = $PWD
+# $path = [Environment]::GetEnvironmentVariable("PATH", "Machine")
+# #{cmd}
+# Pop-Location
+# [Environment]::CurrentDirectory = $PWD
+# EOH
+# )
+#     #"powershell.exe -executionpolicy Bypass -command \"& #{filename}\""
+#     filename
+#   end
+# end
 
 def trim_output(output, regions)
   if regions
     [regions].flatten.each do |region|
-      match_string = /(#{region[:from]}).*?(#{region[:to]})/m
+      match_string = /(#{region[:from]}).*#{region[:lazy] || true ? '?' : ''}(#{region[:to]})/m
       output.gsub!(match_string, "\1#{region[:replace_with] || "[TRIMMED_OUTPUT]"}\2")
     end
   end
   output
+end
+
+def remove_lines(s, match)
+  s.gsub(match, "")
 end
 
 # Performs necessary translation some commands require.
@@ -147,7 +186,27 @@ end
 def clean_output(output)
   if command =~ /^chef\s/
     output.gsub(/\[\d+m$/, '').gsub(/^(.*)\[\d+m/, '\1')
+  elsif command =~ /^vagrant\s/
+    output.gsub(/\[K/, '') # clear out K markers
   else
     output
   end
 end
+
+# def env_for_platform
+#   case node['platform']
+#   when 'windows'
+#     nil
+#   else
+#     nil
+#   end
+# end
+
+# def default_shell_for_platform
+#   case node['platform']
+#   when 'windows'
+#     'powershell'
+#   else
+#     'bash'
+#   end
+# end

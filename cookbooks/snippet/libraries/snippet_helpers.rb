@@ -26,6 +26,10 @@ module LearnChef
     node.default['snippets']['root_directory']
   end
 
+  def workstation_platform
+    node.default['platform'] =~ /windows/ ? 'windows' : 'linux'
+  end
+
   private
 
   @@options = {}
