@@ -36,6 +36,17 @@ namespace :snippets do
       puts "$".green + " export SNIPPET_DIRECTORY=~/Development/cia/chef-web-learn/snippets"
     end
   end
+
+  desc 'Copies snippets locally from the running Vagrant box'
+  task :rsync, :scenario do |_t, args|
+    ssh_config = `cd scenarios/#{args[:scenario]} && vagrant ssh-config`.split("\n")
+    ip_address = ssh_config.grep(/^\s+HostName (.+)$/) { $1 }[0]
+    username = ssh_config.grep(/^\s+User (.+)$/) { $1 }[0]
+    key = ssh_config.grep(/^\s+IdentityFile (.+)$/) { $1 }[0]
+    from_there = "/vagrant/snippets"
+    to_here = "scenarios/#{args[:scenario]}"
+    file_downloader ip_address, username, key, from_there, to_here, :recursive => true
+  end
 end
 
 namespace :vagrant do
@@ -229,4 +240,10 @@ class String
   def pink
     colorize(35)
   end
+end
+
+def file_downloader(ip_address, username, key, from_there, to_here, options = {})
+  require 'net/scp'
+  Net::SCP::download!(ip_address, username, from_there, to_here, :ssh => { :keys => key }, :paranoid => false, **options)
+  #end
 end
