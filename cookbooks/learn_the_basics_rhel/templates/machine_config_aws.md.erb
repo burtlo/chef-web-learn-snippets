@@ -1,3 +1,7 @@
-This tutorial was last tested with this configuration:
+This tutorial was last tested using this configuration:
 
-* CentOS 7 on Amazon Web Services, <%= node['cloud']['aws']['region'] %>, AMI ID <%= node['cloud']['aws']['node']['ami_id'] %>, <%= node['cloud']['aws']['node']['instance_type'] %>, Chef Development Kit <%= node['products']['versions']['chefdk']['rhel'].split('-')[1] %>
+* CentOS 7 on Amazon Web Services
+  * Region: <%= node['cloud']['aws']['region'] %>
+  * AMI ID <%= node['cloud']['aws']['node']['ami_id'] %>
+  * Instance type: <%= node['cloud']['aws']['node']['instance_type'] %>
+  * Software: Chef Development Kit <%= node['products']['versions']['chefdk']['rhel'].split('-')[1] %>
