@@ -1,0 +1,51 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+chef_version = "stable-12.12.15"
+aws_region = "us-east-1"
+aws_ami_id = "ami-6d1c2007"
+aws_instance_type = "t2.micro"
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "vagrant-aws-dummy"
+
+  config.vm.provider :aws do |aws, override|
+    aws.access_key_id = ENV['AWS_ACCESS_KEY_ID']
+    aws.secret_access_key = ENV['AWS_SECRET_ACCESS_KEY']
+    aws.keypair_name = ENV['AWS_KEYPAIR_NAME']
+    aws.region = aws_region
+    aws.ami = aws_ami_id
+    aws.instance_type = aws_instance_type
+    aws.security_groups = ["Web server - Linux"]
+    aws.user_data # https://github.com/mitchellh/vagrant/issues/1482
+    aws.user_data = "#!/bin/bash\nsed -i -e 's/^Defaults.*requiretty/# Defaults requiretty/g' /etc/sudoers" # https://github.com/mitchellh/vagrant-aws/issues/340
+
+    override.ssh.username = "centos"
+    override.ssh.private_key_path = ENV['AWS_PRIVATE_KEY_PATH']
+    override.nfs.functional = false # https://github.com/mitchellh/vagrant/issues/5401
+  end
+
+  config.vm.provision "chef_solo" do |chef|
+    chef.product = "chef"
+    chef.channel = chef_version.split('-')[0]
+    chef.version = chef_version.split('-')[1]
+    chef.cookbooks_path = "vendored-cookbooks"
+    chef.add_recipe "learn_the_basics_rhel"
+    chef.log_level = "fatal"
+    chef.json = {
+      "snippets" => {
+        "virtualization" => "aws",
+        "prompt_character" => "[centos@ip-172-33-44-55 ~]$"
+      },
+      "cloud" => {
+        "aws" => {
+          "region" => aws_region,
+          "node" => {
+            "ami_id" => aws_ami_id,
+            "instance_type" => aws_instance_type
+          }
+        }
+      }
+    }
+    chef.synced_folder_type = 'rsync' # https://github.com/mitchellh/vagrant-aws/issues/340
+  end
+end

@@ -22,6 +22,6 @@ action :write do
 
   # Write config file.
   template config_filename do
-    source 'machine_config.md.erb'
+    source "machine_config_#{virtualization}.md.erb"
   end
 end
