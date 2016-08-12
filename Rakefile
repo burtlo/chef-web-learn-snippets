@@ -39,13 +39,25 @@ namespace :snippets do
 
   desc 'Copies snippets locally from the running Vagrant box'
   task :rsync, :scenario do |_t, args|
-    ssh_config = `cd scenarios/#{args[:scenario]} && vagrant ssh-config`.split("\n")
-    ip_address = ssh_config.grep(/^\s+HostName (.+)$/) { $1 }[0]
-    username = ssh_config.grep(/^\s+User (.+)$/) { $1 }[0]
-    key = ssh_config.grep(/^\s+IdentityFile (.+)$/) { $1 }[0]
-    from_there = "/vagrant/snippets"
-    to_here = "scenarios/#{args[:scenario]}"
-    file_downloader ip_address, username, key, from_there, to_here, :recursive => true
+    if vagrant_scenario?(args[:scenario])
+      ssh_config = `cd scenarios/#{args[:scenario]} && vagrant ssh-config`.split("\n")
+      ip_address = ssh_config.grep(/^\s+HostName (.+)$/) { $1 }[0]
+      username = ssh_config.grep(/^\s+User (.+)$/) { $1 }[0]
+      key = ssh_config.grep(/^\s+IdentityFile (.+)$/) { $1 }[0]
+      from_there = "/vagrant/snippets"
+      to_here = "scenarios/#{args[:scenario]}"
+      file_downloader ip_address, username, key, from_there, to_here, :recursive => true
+    elsif terraform_scenario?(args[:scenario])
+      ssh_config = `cd scenarios/#{args[:scenario]} && ~/terraform show`.split("\n")
+      ip_address = ssh_config.grep(/^\s+ip_address = (.+)$/) { $1 }[0]
+      username = ssh_config.grep(/admin_username = (.+)$/) { $1 }[0]
+      key = File.expand_path("~/.ssh/id_rsa")
+      from_there = "/vagrant/snippets"
+      to_here = "scenarios/#{args[:scenario]}"
+      file_downloader ip_address, username, key, from_there, to_here, :recursive => true
+    else
+      raise 'No Vagrantfile or Terraform plan found!'
+    end
   end
 end
 
@@ -91,6 +103,18 @@ namespace :vagrant do
   end
 end
 
+namespace :tf do
+  desc 'terraform apply machines for a scanario'
+  task :apply, :scenario do |_t, args|
+    sh "cd scenarios/#{args[:scenario]} && ~/terraform apply -var-file=terraform.tfvars"
+  end
+
+  desc 'terraform destroy machines for a scanario'
+  task :destroy, :scenario do |_t, args|
+    sh "cd scenarios/#{args[:scenario]} && ~/terraform destroy --force"
+  end
+end
+
 namespace :scenario do
   desc 'Lists all scenarios'
   task :list do |_t, args|
@@ -108,7 +132,7 @@ namespace :scenario do
   desc 'Runs a scanario from start to end'
   task :run, :scenario do |_t, args|
     scenario = args[:scenario]
-    tasks = %w[scenario:start vagrant:destroy]
+    tasks = %w[scenario:start scenario:cleanup]
     tasks.each do |task|
       Rake::Task[task].invoke(scenario)
       Rake::Task[task].reenable
@@ -119,7 +143,12 @@ namespace :scenario do
   desc 'Starts a scanario'
   task :start, :scenario do |_t, args|
     scenario = args[:scenario]
-    tasks = %w[vagrant:destroy snippets:delete cookbook:vendor vagrant:up]
+    ns = scenario_namespace(scenario)
+    tasks = []
+    tasks << "#{ns}:destroy"
+    tasks << "snippets:delete"
+    tasks << "cookbook:vendor"
+    tasks << (ns == 'vagrant' ? "vagrant:up" : "tf:apply")
     tasks.each do |task|
       Rake::Task[task].invoke(scenario)
       Rake::Task[task].reenable
@@ -136,6 +165,15 @@ namespace :scenario do
       Rake::Task[task].invoke(scenario)
       Rake::Task[task].reenable
     end
+  end
+
+  # Run this task to cleanup a scenario
+  desc 'Cleans up an active scanario'
+  task :cleanup, :scenario do |_t, args|
+    scenario = args[:scenario]
+    task = "#{scenario_namespace(scenario)}:destroy"
+    Rake::Task[task].invoke(scenario)
+    Rake::Task[task].reenable
   end
 end
 
@@ -246,4 +284,22 @@ def file_downloader(ip_address, username, key, from_there, to_here, options = {}
   require 'net/scp'
   Net::SCP::download!(ip_address, username, from_there, to_here, :ssh => { :keys => key }, :paranoid => false, **options)
   #end
+end
+
+def vagrant_scenario?(scenario)
+  File.exists?("scenarios/#{scenario}/Vagrantfile")
+end
+
+def terraform_scenario?(scenario)
+  File.exists?("scenarios/#{scenario}/main.tf")
+end
+
+def scenario_namespace(scenario)
+  if vagrant_scenario?(scenario)
+    'vagrant'
+  elsif terraform_scenario?(scenario)
+    'tf'
+  else
+    raise 'No Vagrantfile or Terraform plan found!'
+  end
 end

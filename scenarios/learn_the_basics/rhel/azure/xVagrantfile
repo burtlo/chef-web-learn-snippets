@@ -1,0 +1,129 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+$chef_version = "stable-12.12.15"
+$azure_location = "eastus"
+$azure_vm_image_urn = "https://defaultstorageeastus2691.blob.core.windows.net/system/Microsoft.Compute/Images/vhds/centos-72-tty-osDisk.e27b7acc-4f99-46dd-aeef-c862b1d5b6a8.vhd"
+#"redhat:rhel:7.2:7.2.20160302" #"openlogic:centos:7.2n:7.2.20160629"
+$azure_vm_size = "Standard_D1"
+
+# def provision_requiretty(config)
+#   config.vm.provision "shell", inline: "sed -i 's/requiretty/!requiretty/' /etc/sudoers"
+# end
+#
+# def provision_chef(config)
+#
+# end
+
+Vagrant.configure('2') do |config|
+  config.vm.box = 'vagrant-azure-dummy'
+
+  # use local ssh key to connect to remote vagrant box
+  config.ssh.private_key_path = File.expand_path('~/.ssh/id_rsa')
+  config.ssh.pty=true
+  config.ssh.username= 'vagrant'
+  #config.ssh.password = 'v8grant!'
+
+  #config.nfs.functional = false # https://github.com/mitchellh/vagrant/issues/5401
+
+  #config.vm.synced_folder ".", "/vagrant", type: 'rsync', rsync__args: ["-t"]
+  config.vm.synced_folder ".", "/vagrant", disabled: true
+
+  # https://github.com/mitchellh/vagrant-aws/issues/340
+  config.vm.provision "shell", inline: "sed -i 's/requiretty/!requiretty/' /etc/sudoers"
+    #"sed -i -e 's/^Defaults.*requiretty/# Defaults requiretty/g' /etc/sudoers"
+    #"#!/bin/bash\nsed -i -e 's/^Defaults.*requiretty/# Defaults requiretty/g' /etc/sudoers"
+
+  config.vm.provision "chef_solo" do |chef|
+    chef.product = "chef"
+    chef.channel = $chef_version.split('-')[0]
+    chef.version = $chef_version.split('-')[1]
+    chef.cookbooks_path = "vendored-cookbooks"
+    chef.add_recipe "learn_the_basics_rhel"
+    chef.log_level = "fatal"
+    chef.json = {
+      "snippets" => {
+        "virtualization" => "azure",
+        "prompt_character" => "[chef@ancient-paper-63 /]$"
+      },
+      "cloud" => {
+        "azure" => {
+          "location" => $azure_location,
+          "node" => {
+            "image_urn" => $azure_vm_image_urn,
+            "size" => $azure_vm_size
+          }
+        }
+      }
+    }
+    chef.synced_folder_type = 'rsync' # https://github.com/mitchellh/vagrant-aws/issues/340
+  end
+
+  config.vm.provider :azure do |azure, override|
+
+    # use Azure Active Directory Application / Service Principal to connect to Azure
+    # see: https://azure.microsoft.com/en-us/documentation/articles/resource-group-create-service-principal-portal/
+
+    # each of the below values will default to use the env vars named as below if not specified explicitly
+    azure.tenant_id = ENV['AZURE_TENANT_ID'] || "a2b2d6bc-afe1-4696-9c37-f97a7ac416d7"
+    azure.client_id = ENV['AZURE_CLIENT_ID'] || "399e22ca-ab34-4768-ac9b-9c2ba7501e98"
+    azure.client_secret = ENV['AZURE_CLIENT_SECRET'] || "4VQAlTR3EDPt+koAdhE+KmLavRiRVTBHDLaXVGzOpb4="
+    azure.subscription_id = ENV['AZURE_SUBSCRIPTION_ID'] || "bacf2c23-fb3f-4dde-bc6e-9d242e21ffe7"
+
+    #azure.vm_user = 'chef'
+    #azure.vm_password = 'v8grant!'
+    azure.vm_name = "ancient-paper-63"
+    azure.location = $azure_location
+    azure.vm_size = $azure_vm_size
+    azure.vm_image_urn = $azure_vm_image_urn
+    #azure.resource_group_name
+
+    override.ssh.pty = true
+    #override.ssh.username = "chef"
+    override.nfs.functional = false # https://github.com/mitchellh/vagrant/issues/5401
+  end
+end
+#
+# Vagrant.configure("2") do |config|
+#   config.vm.box = "vagrant-aws-dummy"
+#
+#   config.vm.provider :aws do |aws, override|
+#     aws.access_key_id = ENV['AWS_ACCESS_KEY_ID']
+#     aws.secret_access_key = ENV['AWS_SECRET_ACCESS_KEY']
+#     aws.keypair_name = ENV['AWS_KEYPAIR_NAME']
+#     aws.region = aws_region
+#     aws.ami = aws_ami_id
+#     aws.instance_type = aws_instance_type
+#     aws.security_groups = ["Web server - Linux"]
+#     aws.user_data # https://github.com/mitchellh/vagrant/issues/1482
+#     aws.user_data = "#!/bin/bash\nsed -i -e 's/^Defaults.*requiretty/# Defaults requiretty/g' /etc/sudoers" # https://github.com/mitchellh/vagrant-aws/issues/340
+#
+#     override.ssh.username = "centos"
+#     override.ssh.private_key_path = ENV['AWS_PRIVATE_KEY_PATH']
+#     override.nfs.functional = false # https://github.com/mitchellh/vagrant/issues/5401
+#   end
+#
+#   config.vm.provision "chef_solo" do |chef|
+#     chef.product = "chef"
+#     chef.channel = chef_version.split('-')[0]
+#     chef.version = chef_version.split('-')[1]
+#     chef.cookbooks_path = "vendored-cookbooks"
+#     chef.add_recipe "learn_the_basics_rhel"
+#     chef.log_level = "fatal"
+#     chef.json = {
+#       "snippets" => {
+#         "virtualization" => "aws",
+#         "prompt_character" => "[centos@ip-172-33-44-55 ~]$"
+#       },
+#       "cloud" => {
+#         "aws" => {
+#           "region" => aws_region,
+#           "node" => {
+#             "ami_id" => aws_ami_id,
+#             "instance_type" => aws_instance_type
+#           }
+#         }
+#       }
+#     }
+#     chef.synced_folder_type = 'rsync' # https://github.com/mitchellh/vagrant-aws/issues/340
+#   end
+# end
