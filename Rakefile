@@ -46,15 +46,15 @@ namespace :snippets do
       key = ssh_config.grep(/^\s+IdentityFile (.+)$/) { $1 }[0]
       from_there = "/vagrant/snippets"
       to_here = "scenarios/#{args[:scenario]}"
-      file_downloader ip_address, username, key, from_there, to_here, :recursive => true
+      file_downloader args[:scenario], ip_address, username, key, from_there, to_here, :recursive => true
     elsif terraform_scenario?(args[:scenario])
       ssh_config = `cd scenarios/#{args[:scenario]} && ~/terraform show`.split("\n")
-      ip_address = ssh_config.grep(/^\s+ip_address = (.+)$/) { $1 }[0]
+      ip_address = ssh_config.grep(/^\s*ip_address\s+=\s+(.+)$/) { $1 }[0]
       username = ssh_config.grep(/admin_username = (.+)$/) { $1 }[0]
       key = File.expand_path("~/.ssh/id_rsa")
       from_there = "/vagrant/snippets"
       to_here = "scenarios/#{args[:scenario]}"
-      file_downloader ip_address, username, key, from_there, to_here, :recursive => true
+      file_downloader args[:scenario], ip_address, username, key, from_there, to_here, :recursive => true
     else
       raise 'No Vagrantfile or Terraform plan found!'
     end
@@ -280,10 +280,13 @@ class String
   end
 end
 
-def file_downloader(ip_address, username, key, from_there, to_here, options = {})
+def file_downloader(scenario, ip_address, username, key, from_there, to_here, options = {})
+  # TODO: This fails on GCE.
+  puts "If this command fails, try running:".red
+  puts "scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r -i #{key} #{username}@#{ip_address}:#{from_there} #{to_here}\n\n"
+
   require 'net/scp'
-  Net::SCP::download!(ip_address, username, from_there, to_here, :ssh => { :keys => key }, :paranoid => false, **options)
-  #end
+  Net::SCP::download!(ip_address, username, from_there, to_here, :ssh => { :keys => key, :verbose => :debug}, :paranoid => true, **options)
 end
 
 def vagrant_scenario?(scenario)
