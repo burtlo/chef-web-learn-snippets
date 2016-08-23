@@ -38,25 +38,15 @@ namespace :snippets do
   end
 
   desc 'Copies snippets locally from the running Vagrant box'
-  task :rsync, :scenario do |_t, args|
-    if vagrant_scenario?(args[:scenario])
-      ssh_config = `cd scenarios/#{args[:scenario]} && vagrant ssh-config`.split("\n")
-      ip_address = ssh_config.grep(/^\s+HostName (.+)$/) { $1 }[0]
-      username = ssh_config.grep(/^\s+User (.+)$/) { $1 }[0]
-      key = ssh_config.grep(/^\s+IdentityFile (.+)$/) { $1 }[0]
-      from_there = "/vagrant/snippets"
-      to_here = "scenarios/#{args[:scenario]}"
-      file_downloader args[:scenario], ip_address, username, key, from_there, to_here, :recursive => true
-    elsif terraform_scenario?(args[:scenario])
-      ssh_config = `cd scenarios/#{args[:scenario]} && ~/terraform show`.split("\n")
-      ip_address = ssh_config.grep(/^\s*ip_address\s+=\s+(.+)$/) { $1 }[0]
-      username = ssh_config.grep(/admin_username = (.+)$/) { $1 }[0]
-      key = File.expand_path("~/.ssh/id_rsa")
-      from_there = "/vagrant/snippets"
-      to_here = "scenarios/#{args[:scenario]}"
-      file_downloader args[:scenario], ip_address, username, key, from_there, to_here, :recursive => true
+  task :rsync, :scenario, :method do |t, args|
+    method = args[:method] || 'ssh'
+    case method
+    when 'ssh'
+      download_files_ssh(args[:scenario])
+    when 'ftp'
+      download_files_ftp(args[:scenario])
     else
-      raise 'No Vagrantfile or Terraform plan found!'
+      raise "Unknown transfer method '#{method}'"
     end
   end
 end
@@ -287,6 +277,60 @@ def file_downloader(scenario, ip_address, username, key, from_there, to_here, op
 
   require 'net/scp'
   Net::SCP::download!(ip_address, username, from_there, to_here, :ssh => { :keys => key, :verbose => :debug}, :paranoid => true, **options)
+end
+
+def download_files_ssh(scenario)
+  if vagrant_scenario?(scenario)
+    ssh_config = `cd scenarios/#{scenario} && vagrant ssh-config`.split("\n")
+    ip_address = ssh_config.grep(/^\s+HostName (.+)$/) { $1 }[0]
+    username = ssh_config.grep(/^\s+User (.+)$/) { $1 }[0]
+    key = ssh_config.grep(/^\s+IdentityFile (.+)$/) { $1 }[0]
+    from_there = "/vagrant/snippets"
+    to_here = "scenarios/#{scenario}"
+    file_downloader scenario, ip_address, username, key, from_there, to_here, :recursive => true
+  elsif terraform_scenario?(scenario)
+    ssh_config = `cd scenarios/#{scenario} && ~/terraform show`.split("\n")
+    ip_address = ssh_config.grep(/^\s*ip_address\s+=\s+(.+)$/) { $1 }[0]
+    username = ssh_config.grep(/admin_username = (.+)$/) { $1 }[0]
+    key = File.expand_path("~/.ssh/id_rsa")
+    from_there = "/vagrant/snippets"
+    to_here = "scenarios/#{scenario}"
+    file_downloader scenario, ip_address, username, key, from_there, to_here, :recursive => true
+  else
+    raise 'No Vagrantfile or Terraform plan found!'
+  end
+end
+
+def download_files_ftp_aux(ftp, local_path)
+  files = ftp.nlst
+  files.each do |f|
+    begin
+      if ftp.size(f).is_a? Numeric
+        ftp.gettextfile(f, File.join(local_path, f))
+      end
+    rescue Net::FTPPermError
+      pwd = ftp.pwd
+      ftp.chdir(f)
+      new_path = File.join(local_path, f)
+      Dir.mkdir(new_path) unless Dir.exist?(new_path)
+      download_files_ftp_aux(ftp, new_path)
+      ftp.chdir(pwd)
+    end
+  end
+end
+
+def download_files_ftp(scenario)
+  ssh_config = `cd scenarios/#{scenario} && ~/terraform show`.split("\n")
+  public_dns = ssh_config.grep(/^\s*public_dns\s+=\s+(.+)$/) { $1 }[0]
+  puts "Public DNS is: " + public_dns
+  username = 'Administrator'
+  password = 'P4ssw0rd!'
+  from_there = "."
+  to_here = "scenarios/#{scenario}"
+  require 'net/ftp'
+  ftp = Net::FTP.new(public_dns, username, password)
+  download_files_ftp_aux(ftp, File.expand_path("scenarios/#{scenario}"))
+  ftp.close
 end
 
 def vagrant_scenario?(scenario)

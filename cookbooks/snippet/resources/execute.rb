@@ -14,7 +14,6 @@ property :cwd, [ String, nil ], default: nil
 property :trim_stdout, [ Array, Hash, nil ], default: nil
 property :remove_lines_matching, [ Array, String, Regexp, nil ], default: nil
 property :trim_stderr, [ Array, Hash, nil ], default: nil
-property :abort_on_failure, [ TrueClass, FalseClass ], default: true
 property :prompt_character, [ String, nil ], default: nil
 
 def initialize(*args)
@@ -39,26 +38,22 @@ action :run do
   # Metadata about the snippet.
   metadata = {
     snippet_tag: "<% command_snippet(page: current_page, path: '#{::File.join(step, id)}') %>",
-    language: shell,
+    language: shell == 'powershell' ? 'ps' : shell, #TODO
     display_path: cwd
   }
 
   # Run the command.
   options = {}
   options[:cwd] = ::File.expand_path(cwd)
-  #env = env_for_platform
-  # if node['platform'] == 'windows'
-  #   options[:env] = {
-  #     "PATH" => powershell_out("[System.Environment]::GetEnvironmentVariable('PATH','Machine')").stdout
-  #   }
-  # end
-  #options[:env] = env if env
+  env = node['workstation']['environment']['windows']
+  options[:environment] = { "PATH" => env } if env
+
   if shell == 'powershell'
     result = powershell_out(translate_command, options)
   else
     result = shell_out(translate_command, options)
   end
-  result.error! if abort_on_failure
+  result.error! unless ignore_failure
 
   # Clean the output.
   clean_stdout = clean_output(result.stdout.dup)
@@ -116,31 +111,6 @@ action :run do
   end
 end
 
-# # Generates the final command to run in the current shell.
-# def command_for_shell(cmd)
-#   case shell
-#   when 'bash'
-#     cmd
-#   when 'powershell'
-#     cmd
-#   when 'ps', 'powershell'
-#     require 'securerandom'
-#     ::Dir.mkdir("C:\\vagrant\\scripts") unless ::Dir.exist?("C:\\vagrant\\scripts")
-#     filename = "C:\\vagrant\\scripts\\#{SecureRandom.hex[0..7]}.ps1"
-#     ::File.write(filename, <<-EOH
-# Push-Location "#{::File.expand_path(cwd)}"
-# [Environment]::CurrentDirectory = $PWD
-# $path = [Environment]::GetEnvironmentVariable("PATH", "Machine")
-# #{cmd}
-# Pop-Location
-# [Environment]::CurrentDirectory = $PWD
-# EOH
-# )
-#     #"powershell.exe -executionpolicy Bypass -command \"& #{filename}\""
-#     filename
-#   end
-# end
-
 def trim_output(output, regions)
   if regions
     [regions].flatten.each do |region|
@@ -185,28 +155,10 @@ end
 #   - create new directory cookbooks/learn_chef_httpd/templates/default
 def clean_output(output)
   if command =~ /^chef\s/
-    output.gsub(/\[\d+m$/, '').gsub(/^(.*)\[\d+m/, '\1')
+    output.gsub(/\[\d+m/, '').gsub(/^(.*)\[\d+m/, '\1')
   elsif command =~ /^vagrant\s/
     output.gsub(/\[K/, '') # clear out K markers
   else
     output
   end
 end
-
-# def env_for_platform
-#   case node['platform']
-#   when 'windows'
-#     nil
-#   else
-#     nil
-#   end
-# end
-
-# def default_shell_for_platform
-#   case node['platform']
-#   when 'windows'
-#     'powershell'
-#   else
-#     'bash'
-#   end
-# end

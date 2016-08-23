@@ -45,7 +45,7 @@ with_snippet_options(cwd: '~/chef-repo', step: 'create-a-template') do
   end
 
   snippet_code_block 'index-1' do
-    file_path '~/chef-repo/cookbooks/learn_chef_httpd/templates/default/index.html.erb'
+    file_path '~/chef-repo/cookbooks/learn_chef_httpd/templates/index.html.erb'
     source_filename 'index-1.html.erb'
   end
 

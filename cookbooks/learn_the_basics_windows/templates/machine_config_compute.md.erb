@@ -1,0 +1,7 @@
+This tutorial was last tested using this configuration:
+
+* CentOS 7 on Google Compute Engine
+  * **Zone:** <%= node['cloud']['compute']['zone'] %>
+  * **Image:** <%= node['cloud']['compute']['node']['image'] %>
+  * **Machine type:** <%= node['cloud']['compute']['node']['machine_type'] %>
+  * **Software:** Chef Development Kit <%= node['products']['versions']['chefdk']['windows'].split('-')[1] %>

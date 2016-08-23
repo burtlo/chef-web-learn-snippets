@@ -1,6 +1,5 @@
 .vagrant
 snippets
-scripts
 vendored-cookbooks
 terraform.tfvars
 terraform.tfstate

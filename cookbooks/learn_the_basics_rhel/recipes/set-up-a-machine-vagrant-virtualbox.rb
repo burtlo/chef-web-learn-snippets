@@ -71,7 +71,7 @@ with_snippet_options(
     snippet_execute 'vagrant-box-add-centos-72' do
       command 'vagrant box add bento/centos-7.2 --provider=virtualbox'
       remove_lines_matching /^.+?\d+:\d+:\d+.+?\n/
-      abort_on_failure false
+      ignore_failure true
     end
   end
 
@@ -80,11 +80,11 @@ with_snippet_options(
   with_snippet_options(cwd: '~', step: 'bring-up-a-centos-72-instance') do
     snippet_execute 'vagrant-init' do
       command 'vagrant init bento/centos-7.2'
-      abort_on_failure false
+      ignore_failure true
     end
     snippet_execute 'vagrant-up' do
       command 'vagrant up'
-      abort_on_failure false
+      ignore_failure true
     end
   end
 
@@ -97,7 +97,7 @@ with_snippet_options(
       end
       snippet_execute 'ssh-no-args' do
         command 'ssh'
-        abort_on_failure false
+        ignore_failure true
       end
     end
   end

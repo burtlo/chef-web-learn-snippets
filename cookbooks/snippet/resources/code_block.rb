@@ -12,6 +12,7 @@ property :step, [ String, nil ], default: nil
 property :file_path, String, required: true
 # The source cookbook filename.
 property :source_filename, String, required: true
+property :language, [ String, nil ], default: nil
 
 def initialize(*args)
   super
@@ -36,8 +37,8 @@ action :create do
 
   # Metadata about the snippet.
   metadata = {
-    snippet_tag: "<% code_snippet('#{snippet_partial_path}') %>",
-    language: language_from_file_path,
+    snippet_tag: "<% code_snippet(page: current_page, path: '#{::File.join(step, id)}') %>",
+    language: language || language_from_file_path,
     display_path: file_path,
     file: ::File.basename(snippet_code_fullpath)
   }
@@ -81,7 +82,7 @@ def map_language(file_path)
   case file_ext
   when '.rb'
     'ruby'
-  when '.html'
+  when '.htm', '.html'
     'html'
   when '.erb'
     # Strip .erb extension and get language for base name.

@@ -6,6 +6,7 @@
 chocolatey_package 'virtualbox' do
   action :install
   version node['products']['versions']['virtualbox']['windows']
+  options '--allowemptychecksum'
   notifies :run, 'powershell_script[add-virtualbox-to-path]', :immediately
 end
 
