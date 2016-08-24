@@ -1,7 +1,7 @@
 This tutorial was last tested using this configuration:
 
-* CentOS 7.2 on Microsoft Azure
+* Windows Server 2012 R2 Datacenter on Microsoft Azure
   * **Location:** <%= node['cloud']['azure']['location'] %>
-  * **Image URN:** <%= node['cloud']['azure']['node']['image_urn'] %>
+  * **Image URN:** Custom image based on <%= node['cloud']['azure']['node']['image_urn'] %>
   * **Size:** <%= node['cloud']['azure']['node']['size'] %>
   * **Software:** Chef Development Kit <%= node['products']['versions']['chefdk']['windows'].split('-')[1] %>

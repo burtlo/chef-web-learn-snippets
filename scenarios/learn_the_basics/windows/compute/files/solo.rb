@@ -1,10 +1,9 @@
-node_name "centos-72"
-file_cache_path    "/var/chef/cache"
-file_backup_path   "/var/chef/backup"
-cookbook_path ["/tmp/vendored-cookbooks"]
+tmp = 'C:/temp/chef-solo'
+file_cache_path tmp
+cookbook_path ["C:/temp/vendored-cookbooks"]
 log_level :warn
 verbose_logging false
-json_attribs      "/tmp/dna.json"
+json_attribs      "C:/temp/dna.json"
 encrypted_data_bag_secret nil
 
 http_proxy nil

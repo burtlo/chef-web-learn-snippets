@@ -321,11 +321,11 @@ end
 
 def download_files_ftp(scenario)
   ssh_config = `cd scenarios/#{scenario} && ~/terraform show`.split("\n")
-  public_dns = ssh_config.grep(/^\s*public_dns\s+=\s+(.+)$/) { $1 }[0]
+  public_dns = ssh_config.grep(/^\s*public_dns\s+=\s+(.+)$/) { $1 }[0] ||
+               ssh_config.grep(/^\s*ip_address\s+=\s+(.+)$/) { $1 }[0]
   puts "Public DNS is: " + public_dns
-  username = 'Administrator'
+  username = 'chef'
   password = 'P4ssw0rd!'
-  from_there = "."
   to_here = "scenarios/#{scenario}"
   require 'net/ftp'
   ftp = Net::FTP.new(public_dns, username, password)
