@@ -4,3 +4,4 @@ vendored-cookbooks
 terraform.tfvars
 terraform.tfstate
 terraform.tfstate.backup
+secrets

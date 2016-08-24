@@ -1,5 +1,8 @@
+# net user "${username}" ${password}
+# wmic useraccount where "name='${username}'" set PasswordExpires=FALSE
+
 winrm quickconfig -q
-winrm set winrm/config/winrs '@{MaxMemoryPerShellMB="0"}'
+winrm set winrm/config/winrs '@{MaxMemoryPerShellMB="1024"}'
 winrm set winrm/config '@{MaxTimeoutms="7200000"}'
 winrm set winrm/config/service '@{AllowUnencrypted="true"}'
 winrm set winrm/config/service/auth '@{Basic="true"}'

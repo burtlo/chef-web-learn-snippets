@@ -20,7 +20,7 @@ variable "chef_version" {
 }
 
 variable "image" {
-  default = "centos-7-v20160803"
+  default = "windows-server-2012-r2-dc-v20160809"
 }
 
 variable "machine_type" {
@@ -28,7 +28,24 @@ variable "machine_type" {
 }
 
 variable "hostname" {
-  default = "centos-compute"
+  default = "windows-compute"
+}
+
+variable "username" {
+  default = "chef"
+}
+
+variable "password" {
+  default = "P4ssw0rd1234!"
+}
+
+data "template_file" "bootstrap" {
+  template = "${file("../../../shared/scripts/bootstrap.ps1.tpl")}"
+
+  vars {
+      username = "${var.username}"
+      password = "${var.password}"
+  }
 }
 
 # Configure the Google Cloud provider
@@ -37,6 +54,8 @@ provider "google" {
   project     = "${var.project}"
   region      = "${var.region}"
 }
+
+# until gcloud compute instances describe windows-compute; do sleep 1; done; gcloud compute reset-windows-password windows-compute --quiet | grep password: | sed 's/password\:\s*\(\S*\)/\1/' | sed -e 's/^[[:space:]]*//' > secrets/password.txt
 
 resource "google_compute_instance" "default" {
   name         = "${var.hostname}"
@@ -68,60 +87,96 @@ resource "google_compute_instance" "default" {
     }
   }
 
-  # TODO: Doesn't seem to work. Using remote-exec below.
-  # metadata_startup_script = "sudo sed -i -e 's/^Defaults.*requiretty/Defaults !requiretty/g' /etc/sudoers"
-
-  connection {
-    user     = "${var.username}"
-    key_file = "${var.ssh_key_file}"
+  metadata {
+    gce-initial-windows-user = "${var.username}"
+    #gce-initial-windows-password = "${var.password}"
+    sysprep-specialize-script-ps1 = "${data.template_file.bootstrap.rendered}"
   }
+}
 
-  provisioner "remote-exec" {
-    inline = [
-      "sudo sed -i -e 's/^Defaults.*requiretty/Defaults !requiretty/g' /etc/sudoers"
-    ]
+resource "null_resource" "reset_windows_password" {
+  depends_on = ["google_compute_instance.default"]
+
+  provisioner "local-exec" {
+    command = "gcloud compute reset-windows-password \"${var.hostname}\" --quiet | grep password: | sed 's/password\\:\\s*\\(\\S*\\)/\\1/' | sed -e 's/^[[:space:]]*//' > secrets/password.txt"
   }
+}
 
-  provisioner "file" {
-    source = "vendored-cookbooks"
-    destination = "/tmp"
-  }
+resource "null_resource" "run_provisioners" {
+    depends_on = ["null_resource.reset_windows_password"]
 
-  provisioner "file" {
-    source = "files/solo.rb"
-    destination = "/tmp/solo.rb"
-  }
+    # This lousy POS just won't connect.
+    #  null_resource.run_provisioners: Still creating... (4m50s elapsed)
+    #  Error applying plan:
+    #
+    #  1 error(s) occurred:
+    #  http error: 401 -
 
-  provisioner "file" {
-      content = <<EOF
-  {
-    "run_list": [
-      "recipe[learn_the_basics_windows]"
-    ],
-    "snippets": {
-      "virtualization": "compute",
-      "prompt_character": "[chef@${var.hostname} ~]$"
-    },
-    "cloud": {
-      "compute": {
-        "zone": "${var.region}-${var.zone}",
-        "node": {
-          "image": "${var.image}",
-          "machine_type": "${var.machine_type}"
+    connection {
+      type     = "winrm"
+      host     = "${google_compute_instance.default.network_interface.0.access_config.0.assigned_nat_ip}"
+      insecure = true
+      #https    = false
+      user     = "${var.username}"
+      password = "${file("secrets/password.txt")}"
+    }
+
+    provisioner "file" {
+      source = "vendored-cookbooks"
+      destination = "C:\\Temp\\vendored-cookbooks"
+    }
+
+    provisioner "file" {
+      source = "files/solo.rb"
+      destination = "C:\\Temp\\solo.rb"
+    }
+
+    provisioner "file" {
+        content = <<EOF
+    {
+      "run_list": [
+        "recipe[learn_the_basics_windows]"
+      ],
+      "snippets": {
+        "virtualization": "compute"
+      },
+      "cloud": {
+        "compute": {
+          "zone": "${var.region}-${var.zone}",
+          "node": {
+            "image": "${var.image}",
+            "machine_type": "${var.machine_type}"
+          }
         }
       }
     }
-  }
-  EOF
-    destination = "/tmp/dna.json"
-  }
+    EOF
+      destination = "C:\\temp\\dna.json"
+    }
 
-  provisioner "remote-exec" {
-    inline = [
-      "curl https://omnitruck.chef.io/install.sh | sudo bash -s -- -c ${var.chef_channel} -v ${var.chef_version}",
-      "sudo chef-solo -c /tmp/solo.rb -j /tmp/dna.json"
-    ]
-  }
+    provisioner "file" {
+      source = "../../../shared/scripts/SetupFTP.bat"
+      destination = "C:\\Temp\\SetupFTP.bat"
+    }
+
+    provisioner "file" {
+      source = "../../../shared/scripts/SetPath.ps1"
+      destination = "C:\\Temp\\SetPath.ps1"
+    }
+
+    provisioner "file" {
+      source = "../../../shared/scripts/RunChefSolo.bat"
+      destination = "C:\\Temp\\RunChefSolo.bat"
+    }
+
+    provisioner "remote-exec" {
+      inline = [
+        "powershell.exe -ExecutionPolicy RemoteSigned -Command C:\\Temp\\SetPath.ps1",
+        "powershell.exe -ExecutionPolicy RemoteSigned -Command \"& { iwr -useb https://omnitruck.chef.io/install.ps1 } | iex; install -channel ${var.chef_channel} -version ${var.chef_version}\"",
+        "C:\\Temp\\RunChefSolo.bat",
+        "C:\\Temp\\SetupFTP.bat ${google_compute_instance.default.network_interface.0.access_config.0.assigned_nat_ip}"
+      ]
+    }
 }
 
 resource "google_compute_address" "www" {
@@ -134,7 +189,7 @@ resource "google_compute_firewall" "www" {
 
   allow {
     protocol = "tcp"
-    ports = ["22", "80", "443"]
+    ports = ["21", "80", "443", "3389", "5985"]
   }
 
   source_ranges = ["0.0.0.0/0"]
