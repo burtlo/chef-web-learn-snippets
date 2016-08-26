@@ -1,7 +1,7 @@
 This tutorial was last tested using this configuration:
 
 * Windows Server 2012 R2 on Google Compute Engine
-  * **Zone:** <%= node['cloud']['compute']['zone'] %>
-  * **Image:** <%= node['cloud']['compute']['node']['image'] %>
-  * **Machine type:** <%= node['cloud']['compute']['node']['machine_type'] %>
+  * **Zone:** <%= node['cloud']['gcp']['zone'] %>
+  * **Image:** <%= node['cloud']['gcp']['node']['image'] %>
+  * **Machine type:** <%= node['cloud']['gcp']['node']['machine_type'] %>
   * **Software:** Chef Development Kit <%= node['products']['versions']['chefdk']['windows'].split('-')[1] %>

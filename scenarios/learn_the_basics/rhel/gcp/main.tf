@@ -99,11 +99,11 @@ resource "google_compute_instance" "default" {
       "recipe[learn_the_basics_rhel]"
     ],
     "snippets": {
-      "virtualization": "compute",
+      "virtualization": "gcp",
       "prompt_character": "[chef@${var.hostname} ~]$"
     },
     "cloud": {
-      "compute": {
+      "gcp": {
         "zone": "${var.region}-${var.zone}",
         "node": {
           "image": "${var.image}",

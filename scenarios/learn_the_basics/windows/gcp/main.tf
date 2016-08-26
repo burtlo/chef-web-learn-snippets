@@ -138,10 +138,10 @@ resource "null_resource" "run_provisioners" {
         "recipe[learn_the_basics_windows]"
       ],
       "snippets": {
-        "virtualization": "compute"
+        "virtualization": "gcp"
       },
       "cloud": {
-        "compute": {
+        "gcp": {
           "zone": "${var.region}-${var.zone}",
           "node": {
             "image": "${var.image}",
