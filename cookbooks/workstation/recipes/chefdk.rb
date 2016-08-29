@@ -4,13 +4,13 @@
 #
 # Copyright (c) 2016 The Authors, All Rights Reserved.
 
-family = node['platform_family']
+platform = node['platform']
 
-channel = node['products']['versions']['chefdk'][family].split('-')[0]
-version = node['products']['versions']['chefdk'][family].split('-')[1]
+channel = node['products']['versions']['chefdk'][platform].split('-')[0]
+version = node['products']['versions']['chefdk'][platform].split('-')[1]
 
-case family
-when 'debian', 'rhel'
+case platform
+when 'ubuntu', 'rhel'
   snippet_execute 'install-chefdk' do
     command "curl https://omnitruck.chef.io/install.sh | sudo bash -s -- -P chefdk -c #{channel} -v #{version}"
     step 'install-the-chef-dk'

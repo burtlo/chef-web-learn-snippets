@@ -22,6 +22,6 @@ execute 'install virtualbox dependencies' do
 end
 
 execute 'install virtualbox' do
-  command "(apt-get install virtualbox-#{node['products']['versions']['virtualbox']['debian']} -y || apt-get -f install -y) && /sbin/vboxconfig"
+  command "(apt-get install virtualbox-#{node['products']['versions']['virtualbox']['ubuntu']} -y || apt-get -f install -y) && /sbin/vboxconfig"
   action :nothing
 end

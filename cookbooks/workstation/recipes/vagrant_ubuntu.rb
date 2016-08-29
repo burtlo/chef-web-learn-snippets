@@ -3,7 +3,7 @@
 # Recipe:: vagrant_ubuntu
 #
 # Copyright (c) 2016 The Authors, All Rights Reserved.
-version = node['products']['versions']['vagrant']['debian']
+version = node['products']['versions']['vagrant']['ubuntu']
 local_package = "/home/vagrant/Downloads/vagrant_#{version}_x86_64.deb"
 
 directory '/home/vagrant/Downloads'
