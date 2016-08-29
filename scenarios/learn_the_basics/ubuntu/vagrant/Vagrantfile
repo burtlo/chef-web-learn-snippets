@@ -1,0 +1,67 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+chef_version = "stable-12.12.15"
+
+Vagrant.configure(2) do |config|
+
+  config.vm.box = "bento/ubuntu-14.04"
+
+  # cache rules everything around me
+  if Vagrant.has_plugin?("vagrant-cachier")
+    config.cache.scope = :box
+    config.cache.auto_detect = true
+  end
+
+  config.vm.define "workstation-ubuntu-14.04" do |cs|
+    #cs.vm.hostname = "workstation-ubuntu-1404"
+    cs.vm.network "private_network", ip: "192.168.145.132"
+
+    cs.vm.provider "vmware_fusion" do |v|
+      v.memory = 2048
+      v.cpus = 2
+      # Enable nested virtualization.
+      v.customize ["modifyvm", :id, "--hwvirtex", "on"]
+      v.vmx["vhv.enable"] = "TRUE"
+    end
+
+    cs.vm.provision "chef_solo" do |chef|
+      chef.product = "chef"
+      chef.channel = chef_version.split('-')[0]
+      chef.version = chef_version.split('-')[1]
+      chef.cookbooks_path = "vendored-cookbooks"
+      chef.add_recipe "workstation::virtualbox"
+      chef.add_recipe "workstation::vagrant"
+      chef.add_recipe "learn_the_basics_ubuntu::set-up-a-machine-vagrant-virtualbox"
+      chef.log_level = "warn"
+    end
+  end
+
+  config.vm.define "workstation-windows-2012r2", primary: true do |wk|
+    wk.vm.hostname = "workstation-windows-2012r2"
+    wk.vm.network "private_network", ip: "192.168.145.133"
+
+    wk.vm.provider "vmware_fusion" do |v|
+      v.memory = 2048
+      v.cpus = 2
+      # Enable nested virtualization.
+      v.customize ["modifyvm", :id, "--hwvirtex", "on"]
+      v.vmx["vhv.enable"] = "TRUE"
+    end
+
+    wk.vm.provision "shell", path: "../../../shared/scripts/SetPath.ps1"
+
+    wk.vm.provision "chef_solo" do |chef|
+      chef.product = "chef"
+      chef.channel = chef_version.split('-')[0]
+      chef.version = chef_version.split('-')[1]
+      chef.cookbooks_path = "vendored-cookbooks"
+      chef.add_recipe "workstation::default"
+      chef.add_recipe "workstation::virtualbox"
+      chef.add_recipe "workstation::vagrant"
+      chef.add_recipe "learn_the_basics_ubuntu::set-up-a-machine-vagrant-virtualbox"
+      chef.log_level = "warn"
+    end
+
+    wk.vm.box = "opentable/win-2012r2-standard-amd64-nocm"
+  end
+end
