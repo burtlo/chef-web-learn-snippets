@@ -1,0 +1,42 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+chef_channel = "stable"
+chef_version = "12.7.2"
+
+Vagrant.configure(2) do |config|
+
+  config.vm.box = "bento/ubuntu-14.04"
+
+  # cache rules everything around me
+  if Vagrant.has_plugin?("vagrant-cachier")
+    config.cache.scope = :box
+    config.cache.auto_detect = true
+  end
+
+  config.vm.define "ubuntu-14.04" do |cs|
+
+    cs.vm.hostname = "ubuntu-1404"
+    cs.vm.network "private_network", ip: "192.168.33.33"
+
+    cs.vm.provider "virtualbox" do |v|
+      v.memory = 256
+      v.cpus = 1
+    end
+
+    cs.vm.provision "chef_solo" do |chef|
+      chef.product = "chef"
+      chef.channel = chef_channel
+      chef.version = chef_version
+      chef.cookbooks_path = "<%= @cookbook_path %>"
+      chef.add_recipe "learn_the_basics_ubuntu"
+      chef.log_level = "warn"
+      chef.json = {
+        "snippets" => {
+          "virtualization" => "virtualbox",
+          "prompt_character" => "[vagrant@localhost ~]$"
+        }
+      }
+    end
+  end
+end

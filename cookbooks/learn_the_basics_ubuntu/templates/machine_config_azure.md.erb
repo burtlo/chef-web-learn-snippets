@@ -1,0 +1,7 @@
+This tutorial was last tested using this configuration:
+
+* Ubuntu Server 14.04 LTS on Microsoft Azure
+  * **Location:** <%= node['cloud']['azure']['location'] %>
+  * **Image URN:** <%= node['cloud']['azure']['node']['image_urn'] %>
+  * **Size:** <%= node['cloud']['azure']['node']['size'] %>
+  * **Software:** Chef Development Kit <%= node['products']['versions']['chefdk']['ubuntu'].split('-')[1] %>

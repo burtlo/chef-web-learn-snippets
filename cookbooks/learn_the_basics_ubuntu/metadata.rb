@@ -1,0 +1,10 @@
+name 'learn_the_basics_ubuntu'
+maintainer 'The Authors'
+maintainer_email 'you@example.com'
+license 'all_rights'
+description 'Installs/Configures learn_the_basics_ubuntu'
+long_description 'Installs/Configures learn_the_basics_ubuntu'
+version '0.1.0'
+
+depends 'snippet'
+depends 'workstation'
