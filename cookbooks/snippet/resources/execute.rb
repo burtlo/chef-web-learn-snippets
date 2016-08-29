@@ -45,7 +45,7 @@ action :run do
   # Run the command.
   options = {}
   options[:cwd] = ::File.expand_path(cwd)
-  env = node['workstation']['environment']['windows']
+  env = node['workstation']['environment'][node['platform']]
   options[:environment] = { "PATH" => env } if env
 
   if shell == 'powershell'
