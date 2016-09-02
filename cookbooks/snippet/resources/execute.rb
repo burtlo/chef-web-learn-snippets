@@ -97,7 +97,7 @@ action :run do
 
   # Transform output streams.
   stdout = trim_output(clean_stdout, trim_stdout)
-  stdout = remove_lines(stdout, remove_lines_matching) if remove_lines_matching
+  stdout = remove_lines(stdout, [remove_lines_matching].flatten) if remove_lines_matching
   stderr = trim_output(result.stderr, trim_stderr)
 
   # Write stdout.
@@ -121,14 +121,21 @@ def trim_output(output, regions)
   output
 end
 
-def remove_lines(s, match)
-  s.gsub(match, "")
+def remove_lines(content, matchers)
+  output = []
+  content.lines.each do |line|
+    output << line unless matchers.any? { |matcher| line =~ matcher }
+  end
+  output.join("\n")
 end
 
 # Performs necessary translation some commands require.
 def translate_command
-  if command =~ /chef-client/
+  if command =~ /^chef-client/ || command =~ /^ sudo chef-client/
     translate_chef_client_command
+  elsif command =~ /knife/
+    # Not sure why, but from shell_out, knife.rb isn't found unless you specify the config file path.
+    command + " --config ~/learn-chef/.chef/knife.rb --no-color"
   else
     command
   end
@@ -154,7 +161,7 @@ end
 # becomes:
 #   - create new directory cookbooks/learn_chef_httpd/templates/default
 def clean_output(output)
-  if command =~ /^chef\s/
+  if command =~ /^chef\s/ || command =~ /^knife\s/
     output.gsub(/\[\d+m/, '').gsub(/^(.*)\[\d+m/, '\1')
   elsif command =~ /^vagrant\s/
     output.gsub(/\[K/, '') # clear out K markers

@@ -11,7 +11,9 @@ property :step, [ String, nil ], default: nil
 # The destination file path for replaying the sceanrio.
 property :file_path, String, required: true
 # The source cookbook filename.
-property :source_filename, String, required: true
+property :source_filename, String, required: false
+# The source files content
+property :content, String, required: false
 property :language, [ String, nil ], default: nil
 
 def initialize(*args)
@@ -24,6 +26,13 @@ def initialize(*args)
 end
 
 action :create do
+  if source_filename.nil? && content.nil?
+    raise "You must specify `source_filename' or `content'"
+  end
+  if source_filename && content
+    raise "You may only specify `source_filename' or `content'"
+  end
+
   # Where we place files for playing the scenario.
   scenario_full_path = ::File.expand_path(file_path)
   scenario_directory_name = ::File.dirname(scenario_full_path)
@@ -47,8 +56,14 @@ action :create do
   directory scenario_directory_name do
     recursive true
   end
-  cookbook_file scenario_full_path do
-    source source_filename
+  if source_filename
+    cookbook_file scenario_full_path do
+      source source_filename
+    end
+  else
+    file scenario_full_path do
+      content new_resource.content
+    end
   end
 
   # Write metadata.
@@ -60,8 +75,14 @@ action :create do
   end
 
   # Write codefile snippet.
-  cookbook_file snippet_code_fullpath do
-    source source_filename
+  if source_filename
+    cookbook_file snippet_code_fullpath do
+      source source_filename
+    end
+  else
+    file snippet_code_fullpath do
+      content new_resource.content
+    end
   end
 end
 

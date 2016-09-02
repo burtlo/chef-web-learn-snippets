@@ -1,0 +1,12 @@
+name 'manage_a_node'
+maintainer 'The Authors'
+maintainer_email 'you@example.com'
+license 'all_rights'
+description 'Installs/Configures manage_a_node'
+long_description 'Installs/Configures manage_a_node'
+version '0.1.0'
+
+depends 'snippet'
+depends 'workstation'
+depends 'chef_server'
+depends 'git', '~> 4.6.0'
