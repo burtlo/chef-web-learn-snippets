@@ -6,7 +6,7 @@
 
 with_snippet_options(lesson: 'set-up-your-chef-server', cwd: '~/learn-chef')
 
-with_snippet_options(step: 'VAGRANT_UP') do
+with_snippet_options(step: 'mkdir-chef-server') do
 
   snippet_execute 'mkdir-chef-server' do
     command 'mkdir ~/learn-chef/chef-server'
@@ -18,7 +18,7 @@ with_snippet_options(step: 'VAGRANT_UP') do
   end
 end
 
-with_snippet_options(step: 'VAGRANT_UP', cwd: '~/learn-chef/chef-server') do
+with_snippet_options(step: 'vagrant-up-chef-server', cwd: '~/learn-chef/chef-server') do
 
   # Render template Vagrantfile.erb to /tmp.
   template '/tmp/Vagrantfile' do
@@ -43,7 +43,7 @@ end
 
 ## 1. STEP
 
-with_snippet_options(step: 'DUNNO1') do
+with_snippet_options(step: 'mkdir-dot-chef') do
 
   snippet_execute 'mkdir-dot-chef' do
     command 'mkdir ~/learn-chef/.chef'
@@ -51,7 +51,7 @@ with_snippet_options(step: 'DUNNO1') do
   end
 end
 
-with_snippet_options(step: 'DUNNO4') do
+with_snippet_options(step: 'cp-admin-key') do
 
   # Get admin key.
 
@@ -86,7 +86,7 @@ end
 
 # 1. STEP
 
-with_snippet_options(step: 'DUNNO2') do
+with_snippet_options(step: 'ls-dot-chef') do
 
   snippet_execute 'ls-dot-chef' do
     command 'ls ~/learn-chef/.chef'
@@ -96,7 +96,7 @@ end
 
 # 1. STEP
 
-with_snippet_options(step: 'DUNNO3') do
+with_snippet_options(step: 'validate-ssl-cert') do
 
   snippet_execute 'knife-ssl-fetch' do
     command 'knife ssl fetch'

@@ -30,7 +30,7 @@ with_snippet_options(cwd: '~/learn-chef', step: 'add-template-code-to-your-html'
   if node['snippets']['virtualization'] == 'hosted'
     node.run_state['knife_ssh_command'] = "knife ssh #{node1['ip_address']} 'sudo chef-client' --manual-list --ssh-user #{node1['ssh_user']} --identity-file #{node1['identity_file']}"
   elsif node['snippets']['virtualization'] == 'virtualbox'
-    ruby_block 'vagrant-ssh-config-node1' do
+    ruby_block 'vagrant-ssh-config-node1-2' do
       block do
         lines = `cd ~/learn-chef/chef-server && vagrant ssh-config node1`.split("\n")
         user = lines.grep(/\s*User\s+(.*)$/){$1}[0]

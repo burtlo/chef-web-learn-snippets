@@ -13,14 +13,14 @@ end
 # Ensure cookbook does not exist locally.
 directory ::File.expand_path('~/learn-chef/cookbooks') do
   action :delete
-  recursive true 
+  recursive true
 end
 
 with_snippet_options(lesson: 'upload-a-cookbook', cwd: '~/learn-chef')
 
 # 1. Create cookbooks directory
 
-with_snippet_options(step: 'DUNNO10') do
+with_snippet_options(step: 'create-cookbooks-directory') do
 
   snippet_execute 'mkdir-cookbooks' do
     command 'mkdir ~/learn-chef/cookbooks'
@@ -35,7 +35,7 @@ end
 
 # 1. Get cookbook from github
 
-with_snippet_options(step: 'DUNNO11', cwd: '~/learn-chef/cookbooks') do
+with_snippet_options(step: 'git-clone-cookbook', cwd: '~/learn-chef/cookbooks') do
 
   snippet_execute 'git-clone-learn_chef_httpd' do
     command 'git clone https://github.com/learn-chef/learn_chef_httpd.git'
@@ -46,7 +46,7 @@ end
 
 # Upload your cookbook to the Chef server
 
-with_snippet_options(step: 'DUNNO12') do
+with_snippet_options(step: 'upload-0-1-0') do
 
   snippet_execute 'knife-cookbook-upload-learn_chef_httpd' do
     command 'knife cookbook upload learn_chef_httpd'

@@ -6,9 +6,7 @@
 
 with_snippet_options(lesson: 'set-up-your-chef-server', cwd: '~/learn-chef')
 
-## 1. STEP
-
-with_snippet_options(step: 'DUNNO1') do
+with_snippet_options(step: 'mkdir-dot-chef') do
 
   snippet_execute 'mkdir-dot-chef' do
     command 'mkdir ~/learn-chef/.chef'
@@ -25,9 +23,7 @@ end
   end
 end
 
-# 1. STEP
-
-with_snippet_options(step: 'DUNNO2') do
+with_snippet_options(step: 'ls-dot-chef') do
 
   snippet_execute 'ls-dot-chef' do
     command 'ls ~/learn-chef/.chef'
@@ -35,9 +31,7 @@ with_snippet_options(step: 'DUNNO2') do
 
 end
 
-# 1. STEP
-
-with_snippet_options(step: 'DUNNO3') do
+with_snippet_options(step: 'validate-ssl-cert') do
 
   snippet_execute 'knife-ssl-check' do
     command 'knife ssl check'

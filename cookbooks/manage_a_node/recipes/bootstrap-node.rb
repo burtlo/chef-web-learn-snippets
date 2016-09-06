@@ -41,7 +41,7 @@ with_snippet_options(step: 'bootstrap-your-node') do
     # TODO: I think this is needed only for hosted scenario
     file "node1-private-key"  do
       path ::File.expand_path(node1['identity_file'])
-      content ::File.open("/vagrant/.vagrant/machines/#{node1['name']}/virtualbox/private_key").read
+      content ::File.open("/vagrant/.vagrant/machines/#{node1['name']}/vmware_fusion/private_key").read
       mode '0600'
     end
 
@@ -49,7 +49,10 @@ with_snippet_options(step: 'bootstrap-your-node') do
 
     node.run_state['bootstrap_command'] = "knife bootstrap #{node1['ip_address']} --ssh-user #{node1['ssh_user']} --sudo --identity-file #{node1['identity_file']} --node-name node1 --run-list '#{node1['run_list']}'"
   elsif node['snippets']['virtualization'] == 'virtualbox'
-    ruby_block 'vagrant-ssh-config-node1' do
+
+# TODO: add this as a snippet command
+
+    ruby_block 'vagrant-ssh-config-node1-1' do
       block do
         lines = `cd ~/learn-chef/chef-server && vagrant ssh-config node1`.split("\n")
         user = lines.grep(/\s*User\s+(.*)$/){$1}[0]

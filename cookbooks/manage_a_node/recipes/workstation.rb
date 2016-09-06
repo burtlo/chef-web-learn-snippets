@@ -21,10 +21,6 @@ with_snippet_options(lesson: 'set-up-your-workstation', shell: shell) do
 
   with_snippet_options(cwd: '~', step: 'set-up-your-working-directory') do
 
-    snippet_execute 'DUNNO-PWD' do
-      command 'cd ~/ && pwd'
-    end
-
     snippet_execute 'mkdir-learn-chef' do
       command 'mkdir ~/learn-chef'
       not_if 'stat ~/learn-chef'
