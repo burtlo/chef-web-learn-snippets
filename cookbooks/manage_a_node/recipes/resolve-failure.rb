@@ -28,10 +28,9 @@ with_snippet_options(cwd: '~/learn-chef', step: 'set-web-content-owner') do
   # knife ssh using key-based authentication
   node1 = node['nodes']['rhel']['node1']
   snippet_execute 'knife-ccr-2' do
-    command "knife ssh #{node1['ip_address']} 'sudo chef-client' --manual-list --ssh-user #{node1['ssh_user']} --identity-file #{node1['identity_file']}"
+    command lazy { node.run_state['knife_ssh_command'] }
     ignore_failure true # in fact, we expect this to fail!
     remove_lines_matching [/locale/, /#########/]
-    #not_if 'knife node list --config ~/learn-chef/.chef/knife.rb | grep node1'
   end
 
   ##### RESOLVE
@@ -57,13 +56,12 @@ with_snippet_options(cwd: '~/learn-chef', step: 'set-web-content-owner') do
   # knife ssh using key-based authentication
   node1 = node['nodes']['rhel']['node1']
   snippet_execute 'knife-ccr-3' do
-    command "knife ssh #{node1['ip_address']} 'sudo chef-client' --manual-list --ssh-user #{node1['ssh_user']} --identity-file #{node1['identity_file']}"
+    command lazy { node.run_state['knife_ssh_command'] }
     remove_lines_matching [/locale/, /#########/]
-    #not_if 'knife node list --config ~/learn-chef/.chef/knife.rb | grep node1'
   end
 
   # Confirm the result
-  snippet_execute 'curl-node1-2' do
+  snippet_execute 'curl-node1-3' do
    command "curl #{node1['ip_address']}"
   end
 end

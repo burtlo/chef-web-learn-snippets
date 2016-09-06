@@ -25,16 +25,31 @@ with_snippet_options(cwd: '~/learn-chef', step: 'add-template-code-to-your-html'
     not_if "knife cookbook list --config ~/learn-chef/.chef/knife.rb | grep 'learn_chef_httpd   0.2.0'"
   end
 
-  # knife ssh using key-based authentication
   node1 = node['nodes']['rhel']['node1']
+
+  if node['snippets']['virtualization'] == 'hosted'
+    node.run_state['knife_ssh_command'] = "knife ssh #{node1['ip_address']} 'sudo chef-client' --manual-list --ssh-user #{node1['ssh_user']} --identity-file #{node1['identity_file']}"
+  elsif node['snippets']['virtualization'] == 'virtualbox'
+    ruby_block 'vagrant-ssh-config-node1' do
+      block do
+        lines = `cd ~/learn-chef/chef-server && vagrant ssh-config node1`.split("\n")
+        user = lines.grep(/\s*User\s+(.*)$/){$1}[0]
+        port = lines.grep(/\s*Port\s+(.*)$/){$1}[0]
+        identity_file = lines.grep(/\s*IdentityFile\s+(.*)$/){$1}[0]
+
+        node.run_state['knife_ssh_command'] = "knife ssh localhost --ssh-port #{port} 'sudo chef-client' --manual-list --ssh-user #{user} --identity-file #{identity_file}"
+      end
+    end
+  end
+
+  # knife ssh using key-based authentication
   snippet_execute 'knife-ccr-1' do
-    command "knife ssh #{node1['ip_address']} 'sudo chef-client' --manual-list --ssh-user #{node1['ssh_user']} --identity-file #{node1['identity_file']}"
-    #remove_lines_matching [/locale/, /#########/]
-    #not_if 'knife node list --config ~/learn-chef/.chef/knife.rb | grep node1'
+    command lazy { node.run_state['knife_ssh_command'] }
+    remove_lines_matching [/locale/, /#########/]
   end
 
   # Confirm the result
-  snippet_execute 'curl-node1' do
+  snippet_execute 'curl-node1-2' do
     command "curl #{node1['ip_address']}"
   end
 end

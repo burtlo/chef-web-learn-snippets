@@ -32,21 +32,62 @@ with_snippet_options(step: 'bootstrap-your-node') do
   #   not_if 'knife node list --config ~/learn-chef/.chef/knife.rb | grep node1'
   # end
 
-  # Bootstrap using key-based authentication
   node1 = node['nodes']['rhel']['node1']
 
-  # Place private key
-  file "node1-private-key"  do
-    path ::File.expand_path(node1['identity_file'])
-    # TODO: Replace virtualbox back with vmware_fusion...
-    content ::File.open("/vagrant/.vagrant/machines/#{node1['name']}/virtualbox/private_key").read
+  if node['snippets']['virtualization'] == 'hosted'
+    # Bootstrap using key-based authentication
+
+    # Place private key
+    # TODO: I think this is needed only for hosted scenario
+    file "node1-private-key"  do
+      path ::File.expand_path(node1['identity_file'])
+      content ::File.open("/vagrant/.vagrant/machines/#{node1['name']}/virtualbox/private_key").read
+      mode '0600'
+    end
+
+# knife bootstrap localhost --ssh-port 2200 --ssh-user vagrant --sudo --identity-file /root/learn-chef/chef-server/.vagrant/machines/node1/virtualbox/private_key --node-name node1 --run-list 'recipe[learn_chef_httpd]'
+
+    node.run_state['bootstrap_command'] = "knife bootstrap #{node1['ip_address']} --ssh-user #{node1['ssh_user']} --sudo --identity-file #{node1['identity_file']} --node-name node1 --run-list '#{node1['run_list']}'"
+  elsif node['snippets']['virtualization'] == 'virtualbox'
+    ruby_block 'vagrant-ssh-config-node1' do
+      block do
+        lines = `cd ~/learn-chef/chef-server && vagrant ssh-config node1`.split("\n")
+        user = lines.grep(/\s*User\s+(.*)$/){$1}[0]
+        port = lines.grep(/\s*Port\s+(.*)$/){$1}[0]
+        identity_file = lines.grep(/\s*IdentityFile\s+(.*)$/){$1}[0]
+
+        node.run_state['bootstrap_command'] = "knife bootstrap localhost --ssh-port #{port} --ssh-user #{user} --sudo --identity-file #{identity_file} --node-name node1 --run-list '#{node1['run_list']}'"
+        # Host default
+        # HostName 127.0.0.1
+        # User vagrant
+        # Port 2222
+        # UserKnownHostsFile /dev/null
+        # StrictHostKeyChecking no
+        # PasswordAuthentication no
+        # IdentityFile /Users/babo/src/centos/.vagrant/machines/default/virtualbox/private_key
+        # IdentitiesOnly yes
+        # LogLevel FATAL
+      end
+    end
   end
 
   snippet_execute 'bootstrap-node1-key-based-auth' do
-    command "knife bootstrap #{node1['ip_address']} --ssh-user #{node1['ssh_user']} --sudo --identity-file #{node1['identity_file']} --node-name node1 --run-list '#{node1['run_list']}'"
+    command lazy { node.run_state['bootstrap_command'] }
     remove_lines_matching [/locale/, /#########/]
     not_if 'knife node list --config ~/learn-chef/.chef/knife.rb | grep node1'
   end
+
+  snippet_execute 'curl-node1-1' do
+    command "curl #{node1['ip_address']}"
+  end
+
+  # snippet_execute 'bootstrap-node1-key-based-auth' do
+  #   command "knife bootstrap #{node1['ip_address']} --ssh-user #{node1['ssh_user']} --sudo --identity-file #{node1['identity_file']} --node-name node1 --run-list '#{node1['run_list']}'"
+  #   remove_lines_matching [/locale/, /#########/]
+  #   not_if 'knife node list --config ~/learn-chef/.chef/knife.rb | grep node1'
+  # end
+
+
 
   # snippet_execute 'knife-node-delete-node1-key-based-auth' do
   #   command 'knife node delete node1 --yes'

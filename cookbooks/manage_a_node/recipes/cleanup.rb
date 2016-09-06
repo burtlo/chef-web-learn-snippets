@@ -8,3 +8,11 @@
 # Delete node & client
 
 # Delete cookbook
+
+if node['snippets']['virtualization'] == 'virtualbox'
+  with_snippet_options(lesson: 'set-up-your-chef-server', step: 'cleaning-up', cwd: '~/learn-chef/chef-server') do
+    snippet_execute 'vagrant-destroy' do
+      command 'vagrant destroy --force'
+    end
+  end
+end

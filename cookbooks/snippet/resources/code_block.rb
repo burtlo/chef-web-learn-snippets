@@ -99,6 +99,7 @@ def language_from_file_path
 end
 
 def map_language(file_path)
+
   file_ext = ::File.extname(file_path)
   case file_ext
   when '.rb'
@@ -107,8 +108,15 @@ def map_language(file_path)
     'html'
   when '.erb'
     # Strip .erb extension and get language for base name.
-    file_path2 = ::File.basename(file_path, file_ext)
-    map_language(file_path2)
+    map_language(::File.basename(file_path, file_ext))
+  when ''
+    basename = ::File.basename(file_path)
+    case basename
+    when 'Vagrantfile'
+      'ruby'
+    else
+      nil
+    end
   else
     nil
   end

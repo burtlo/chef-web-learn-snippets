@@ -6,6 +6,41 @@
 
 with_snippet_options(lesson: 'set-up-your-chef-server', cwd: '~/learn-chef')
 
+with_snippet_options(step: 'VAGRANT_UP') do
+
+  snippet_execute 'mkdir-chef-server' do
+    command 'mkdir ~/learn-chef/chef-server'
+    not_if 'stat ~/learn-chef/chef-server'
+  end
+
+  snippet_execute 'cd-chef-server' do
+    command 'cd ~/learn-chef/chef-server'
+  end
+end
+
+with_snippet_options(step: 'VAGRANT_UP', cwd: '~/learn-chef/chef-server') do
+
+  # Render template Vagrantfile.erb to /tmp.
+  template '/tmp/Vagrantfile' do
+    source 'Vagrantfile.erb'
+    variables({
+      :channel => node['products']['versions']['chef_server']['ubuntu'].split('-')[0],
+      :version => node['products']['versions']['chef_server']['ubuntu'].split('-')[1]
+    })
+  end
+
+  # Write Vagrantfile.
+  snippet_code_block 'vagrantfile' do
+    file_path '~/learn-chef/chef-server/Vagrantfile'
+    content lazy { ::File.open('/tmp/Vagrantfile').read }
+  end
+
+  # Vagrant up.
+  snippet_execute 'vagrant-up' do
+    command 'vagrant up'
+  end
+end
+
 ## 1. STEP
 
 with_snippet_options(step: 'DUNNO1') do
@@ -14,30 +49,20 @@ with_snippet_options(step: 'DUNNO1') do
     command 'mkdir ~/learn-chef/.chef'
     not_if 'stat ~/learn-chef/.chef'
   end
-
 end
 
 with_snippet_options(step: 'DUNNO4') do
 
-  # Get validation key.
-
-  # TODO: Create node attribute for 4thcoffee-validator.pem.
-  # TODO: Source will later be ~/learn-chef/chef-server or similar.
-  # TOOD: LIKELY CAN GO AWAY
-  # snippet_execute 'copy-vaidation-key' do
-  #   command 'cp /vagrant/secrets/4thcoffee-validator.pem ~/learn-chef/.chef'
-  # end
+  # Get admin key.
 
   # TODO: Create node attribute for admin.pem.
-  # TODO: Source will later be ~/learn-chef/chef-server or similar.
-  snippet_execute 'copy-vaidation-key' do
-    command 'cp /vagrant/secrets/admin.pem ~/learn-chef/.chef'
+  snippet_execute 'copy-admin-key' do
+    command 'cp ~/learn-chef/chef-server/secrets/admin.pem ~/learn-chef/.chef'
   end
 
-  # Generate knife config
+  # Generate knife config.
 
   # TODO: Create node attribute for 4thcoffee.
-  # TODO: Remove validation key refs if not needed.
   snippet_code_block 'knife-rb' do
     file_path '~/learn-chef/.chef/knife.rb'
     content <<-'EOH'
@@ -50,10 +75,11 @@ node_name                "admin"
 client_key               "#{current_dir}/admin.pem"
 chef_server_url          "https://chef-server.test/organizations/4thcoffee"
 cookbook_path            ["#{current_dir}/../cookbooks"]
-#validation_client_name   "4thcoffee-validator"
-#validation_key           "#{current_dir}/4thcoffee-validator.pem"
-#ssl_verify_mode          :verify_peer
 EOH
+  end
+
+  snippet_execute 'add-chef-server-to-hosts-file' do
+    command 'echo "10.1.1.33 chef-server.test" | tee -a /etc/hosts'
   end
 
 end
