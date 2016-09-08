@@ -34,18 +34,19 @@ with_snippet_options(step: 'bootstrap-your-node') do
 
   node1 = node['nodes']['rhel']['node1']
 
-  if node['snippets']['virtualization'] == 'hosted'
+  if node['snippets']['virtualization'] == 'aws'
+
+    node.run_state['bootstrap_command'] = "knife bootstrap #{node1['ip_address']} --ssh-user #{node1['ssh_user']} --sudo --identity-file #{node1['identity_file']} --node-name node1 --run-list '#{node1['run_list']}'"
+
+  elsif node['snippets']['virtualization'] == 'hosted'
     # Bootstrap using key-based authentication
 
     # Place private key
-    # TODO: I think this is needed only for hosted scenario
     file "node1-private-key"  do
       path ::File.expand_path(node1['identity_file'])
       content ::File.open("/vagrant/.vagrant/machines/#{node1['name']}/vmware_fusion/private_key").read
       mode '0600'
     end
-
-# knife bootstrap localhost --ssh-port 2200 --ssh-user vagrant --sudo --identity-file /root/learn-chef/chef-server/.vagrant/machines/node1/virtualbox/private_key --node-name node1 --run-list 'recipe[learn_chef_httpd]'
 
     node.run_state['bootstrap_command'] = "knife bootstrap #{node1['ip_address']} --ssh-user #{node1['ssh_user']} --sudo --identity-file #{node1['identity_file']} --node-name node1 --run-list '#{node1['run_list']}'"
   elsif node['snippets']['virtualization'] == 'virtualbox'

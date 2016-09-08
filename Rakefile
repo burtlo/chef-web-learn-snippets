@@ -38,11 +38,12 @@ namespace :snippets do
   end
 
   desc 'Copies snippets locally from the running Vagrant box'
-  task :rsync, :scenario, :method do |t, args|
+  task :rsync, :scenario, :method, :private_key_file do |t, args|
     method = args[:method] || 'ssh'
+    private_key_file = args[:private_key_file] || 'id_rsa'
     case method
     when 'ssh'
-      download_files_ssh(args[:scenario])
+      download_files_ssh(args[:scenario], private_key_file)
     when 'ftp'
       download_files_ftp(args[:scenario])
     else
@@ -150,7 +151,15 @@ namespace :scenario do
   task :resume, :scenario do |_t, args|
     scenario = args[:scenario]
     # Vendor in updated cookbooks, reload, and reprovision.
-    tasks = %w[cookbook:vendor vagrant:reload vagrant:provision]
+    ns = scenario_namespace(scenario)
+    tasks = []
+    tasks << "cookbook:vendor"
+    if (ns == 'vagrant')
+      tasks << "vagrant:reload"
+      tasks << "vagrant:provision"
+    else
+      tasks << "tf:apply"
+    end
     tasks.each do |task|
       Rake::Task[task].invoke(scenario)
       Rake::Task[task].reenable
@@ -279,7 +288,7 @@ def file_downloader(scenario, ip_address, username, key, from_there, to_here, op
   Net::SCP::download!(ip_address, username, from_there, to_here, :ssh => { :keys => key, :verbose => :debug}, :paranoid => true, **options)
 end
 
-def download_files_ssh(scenario)
+def download_files_ssh(scenario, private_key_file)
   if vagrant_scenario?(scenario)
     ssh_config = `cd scenarios/#{scenario} && vagrant ssh-config`.split("\n")
     ip_address = ssh_config.grep(/^\s+HostName (.+)$/) { $1 }[0]
@@ -292,7 +301,7 @@ def download_files_ssh(scenario)
     ssh_config = `cd scenarios/#{scenario} && ~/terraform show`.split("\n")
     ip_address = ssh_config.grep(/^\s*ip_address\s+=\s+(.+)$/) { $1 }[0]
     username = ssh_config.grep(/admin_username = (.+)$/) { $1 }[0]
-    key = File.expand_path("~/.ssh/id_rsa")
+    key = File.expand_path("~/.ssh/#{private_key_file}")
     from_there = "/vagrant/snippets"
     to_here = "scenarios/#{scenario}"
     file_downloader scenario, ip_address, username, key, from_there, to_here, :recursive => true
