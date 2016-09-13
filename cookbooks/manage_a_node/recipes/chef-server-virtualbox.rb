@@ -38,6 +38,10 @@ with_snippet_options(step: 'vagrant-up-chef-server', cwd: '~/learn-chef/chef-ser
   # Vagrant up.
   snippet_execute 'vagrant-up' do
     command 'vagrant up'
+    trim_stdout ({
+      from: /^\s+chef-server\: Progress\: 0% \(Rate\: 0\/s, Estimated time remaining: --\:--\:--\)/,
+      to: /^==> node1\:   autogen-libopts.+$\n/
+    })
   end
 end
 
@@ -51,7 +55,7 @@ with_snippet_options(step: 'mkdir-dot-chef') do
   end
 end
 
-with_snippet_options(step: 'cp-admin-key') do
+with_snippet_options(step: 'generate-knife-config') do
 
   # Get admin key.
 

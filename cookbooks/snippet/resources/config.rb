@@ -4,6 +4,7 @@ include Chef::Mixin::ShellOut
 property :tutorial, String, required: true, name_property: true
 property :platform, [ String, nil ], required: false, default: nil
 property :virtualization, [ String, nil ], required: false, default: nil
+property :variables, [ Hash, nil ], required: false, default: nil
 
 def initialize(*args)
   super
@@ -23,5 +24,6 @@ action :write do
   # Write config file.
   template config_filename do
     source "machine_config_#{virtualization}.md.erb"
+    variables new_resource.variables
   end
 end

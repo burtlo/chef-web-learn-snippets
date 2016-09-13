@@ -7,6 +7,14 @@ with_snippet_options(lesson: 'resolve-a-failure')
 
 with_snippet_options(cwd: '~/learn-chef', step: 'set-web-content-owner') do
 
+  # Show current recipe.
+  snippet_code_block 'initial-default-recipe' do
+    file_path '~/learn-chef/cookbooks/learn_chef_httpd/recipes/default.rb'
+    content lazy {
+      ::File.open(::File.expand_path('~/learn-chef/cookbooks/learn_chef_httpd/recipes/default.rb')).read
+    }
+  end
+
   # Update default recipe.
   snippet_code_block 'httpd-add-web-user-err' do
     file_path '~/learn-chef/cookbooks/learn_chef_httpd/recipes/default.rb'
@@ -63,5 +71,39 @@ with_snippet_options(cwd: '~/learn-chef', step: 'set-web-content-owner') do
   # Confirm the result
   snippet_execute 'curl-node1-3' do
    command "curl #{node1['ip_address']}"
+  end
+
+end
+
+with_snippet_options(step: 'cleaning-up', cwd: '~/learn-chef') do
+
+  # Grab chef-client version from node before cleaning up.
+  execute 'get-node-chef-client-version' do
+    command 'knife search node node -a chef_packages.chef.version --config ~/learn-chef/.chef/knife.rb > tmp/node1-chef-client-version'
+  end
+  
+  # Delete node & client
+
+  snippet_execute 'knife-node-delete' do
+    command 'knife node delete node1 --yes'
+  end
+
+  snippet_execute 'knife-client-delete' do
+    command 'knife client delete node1 --yes'
+  end
+
+  # Delete cookbook
+
+  snippet_execute 'knife-cookbook-delete' do
+    command 'knife cookbook delete learn_chef_httpd --all --yes'
+  end
+
+  # Destroy VM
+
+  if node['snippets']['virtualization'] == 'virtualbox'
+    snippet_execute 'vagrant-destroy' do
+      command 'vagrant destroy --force'
+      cwd '~/learn-chef/chef-server'
+    end
   end
 end

@@ -13,6 +13,14 @@ with_snippet_options(cwd: '~/learn-chef', step: 'add-template-code-to-your-html'
     source_filename 'index.html.erb'
   end
 
+  # Show current metadata.
+  snippet_code_block 'metadata-0-1-0' do
+    file_path '~/learn-chef/cookbooks/learn_chef_httpd/metadata.rb'
+    content lazy {
+      ::File.open(::File.expand_path('~/learn-chef/cookbooks/learn_chef_httpd/metadata.rb')).read
+    }
+  end
+
   # Update metadata.
   snippet_code_block 'metadata-0-2-0' do
     file_path '~/learn-chef/cookbooks/learn_chef_httpd/metadata.rb'
@@ -27,9 +35,10 @@ with_snippet_options(cwd: '~/learn-chef', step: 'add-template-code-to-your-html'
 
   node1 = node['nodes']['rhel']['node1']
 
-  if node['snippets']['virtualization'] == 'aws' || node['snippets']['virtualization'] == 'hosted'
+  case node['snippets']['virtualization']
+  when 'hosted', 'aws', 'aws-marketplace', 'azure-marketplace'
     node.run_state['knife_ssh_command'] = "knife ssh #{node1['ip_address']} 'sudo chef-client' --manual-list --ssh-user #{node1['ssh_user']} --identity-file #{node1['identity_file']}"
-  elsif node['snippets']['virtualization'] == 'virtualbox'
+  when 'virtualbox'
     ruby_block 'vagrant-ssh-config-node1-2' do
       block do
         lines = `cd ~/learn-chef/chef-server && vagrant ssh-config node1`.split("\n")

@@ -13,11 +13,11 @@ end
 shell = node['platform'] == 'windows' ? 'ps' : nil
 with_snippet_options(lesson: 'set-up-your-workstation', shell: shell) do
 
-  # 1. Install Chef DK
+  # Install Chef DK
 
   include_recipe 'workstation::chefdk'
 
-  # 2. Set up your working directory
+  # Set up your working directory
 
   with_snippet_options(cwd: '~', step: 'set-up-your-working-directory') do
 
@@ -30,6 +30,13 @@ with_snippet_options(lesson: 'set-up-your-workstation', shell: shell) do
       command 'cd ~/learn-chef'
     end
 
+  end
+
+  # Install git
+  with_snippet_options(cwd: '~', step: 'install-git') do
+    snippet_execute 'git-version' do
+      command 'git --version'
+    end
   end
 
 end

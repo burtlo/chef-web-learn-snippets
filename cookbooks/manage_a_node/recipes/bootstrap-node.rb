@@ -34,25 +34,19 @@ with_snippet_options(step: 'bootstrap-your-node') do
 
   node1 = node['nodes']['rhel']['node1']
 
-  if node['snippets']['virtualization'] == 'aws'
-
+  case node['snippets']['virtualization']
+  when 'aws', 'aws-marketplace', 'azure-marketplace'
     node.run_state['bootstrap_command'] = "knife bootstrap #{node1['ip_address']} --ssh-user #{node1['ssh_user']} --sudo --identity-file #{node1['identity_file']} --node-name node1 --run-list '#{node1['run_list']}'"
-
-  elsif node['snippets']['virtualization'] == 'hosted'
-    # Bootstrap using key-based authentication
-
+  when 'hosted'
     # Place private key
     file "node1-private-key"  do
       path ::File.expand_path(node1['identity_file'])
       content ::File.open("/vagrant/.vagrant/machines/#{node1['name']}/vmware_fusion/private_key").read
       mode '0600'
     end
-
     node.run_state['bootstrap_command'] = "knife bootstrap #{node1['ip_address']} --ssh-user #{node1['ssh_user']} --sudo --identity-file #{node1['identity_file']} --node-name node1 --run-list '#{node1['run_list']}'"
-  elsif node['snippets']['virtualization'] == 'virtualbox'
-
-# TODO: add this as a snippet command
-
+  when 'virtualbox'
+    # TODO: add this as a snippet command
     ruby_block 'vagrant-ssh-config-node1-1' do
       block do
         lines = `cd ~/learn-chef/chef-server && vagrant ssh-config node1`.split("\n")
@@ -79,6 +73,14 @@ with_snippet_options(step: 'bootstrap-your-node') do
     command lazy { node.run_state['bootstrap_command'] }
     remove_lines_matching [/locale/, /#########/]
     not_if 'knife node list --config ~/learn-chef/.chef/knife.rb | grep node1'
+  end
+
+  snippet_execute 'knife-node-list' do
+    command "knife node list"
+  end
+
+  snippet_execute 'knife-node-show' do
+    command "knife node show node1"
   end
 
   snippet_execute 'curl-node1-1' do

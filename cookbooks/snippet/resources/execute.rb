@@ -131,7 +131,10 @@ end
 
 # Performs necessary translation some commands require.
 def translate_command
-  if command =~ /^chef-client/ || command =~ /^ sudo chef-client/
+  if command == 'chef verify'
+    # https://github.com/chef/chef-dk/issues/928
+    'TERM=xterm-256color chef verify'
+  elsif command =~ /^chef-client/ || command =~ /^ sudo chef-client/
     translate_chef_client_command
   elsif command =~ /knife/
     # Not sure why, but from shell_out, knife.rb isn't found unless you specify the config file path.
