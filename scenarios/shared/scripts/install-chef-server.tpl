@@ -17,7 +17,7 @@ if [ ! $(which chef-server-ctl) ]
   then
     wget -P ~/downloads https://packages.chef.io/${server_channel}/ubuntu/14.04/chef-server-core_${server_version}-1_amd64.deb
     sudo dpkg -i ~/downloads/chef-server-core_${server_version}-1_amd64.deb
-    echo "data_collector[\"root_url\"] = \"${server_fqdn}/data-collector/v0/\"" | sudo tee -a /etc/opscode/chef-server.rb
+    echo "data_collector[\"root_url\"] = \"https://${server_fqdn}/data-collector/v0/\"" | sudo tee -a /etc/opscode/chef-server.rb
     echo "data_collector[\"token\"] = \"93a49a4f2482c64126f7b6015e6b0f30284287ee4054ff8807fb63d9cbd1c506\"" | sudo tee -a /etc/opscode/chef-server.rb
     sudo chef-server-ctl reconfigure
     sudo chef-server-ctl user-create admin Bob Admin admin@4thcoffee.com insecurepassword --filename ~/drop/admin.pem

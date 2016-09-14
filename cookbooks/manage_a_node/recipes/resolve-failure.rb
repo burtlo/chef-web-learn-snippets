@@ -79,9 +79,9 @@ with_snippet_options(step: 'cleaning-up', cwd: '~/learn-chef') do
 
   # Grab chef-client version from node before cleaning up.
   execute 'get-node-chef-client-version' do
-    command 'knife search node node -a chef_packages.chef.version --config ~/learn-chef/.chef/knife.rb > tmp/node1-chef-client-version'
+    command %q{knife exec -E 'nodes.find("name:node1") {|n| puts n.attributes.automatic.chef_packages.chef.version }' --config ~/learn-chef/.chef/knife.rb > /tmp/node1-chef-client-version}
   end
-  
+
   # Delete node & client
 
   snippet_execute 'knife-node-delete' do

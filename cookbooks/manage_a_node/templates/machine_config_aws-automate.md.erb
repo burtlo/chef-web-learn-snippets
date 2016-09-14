@@ -1,0 +1,23 @@
+This tutorial was last tested using this configuration:
+
+* Chef Automate <%= node['products']['versions']['automate']['ubuntu'].split('-')[1] %> on Ubuntu 14.04 on Amazon Web Services
+  * **Region:** <%= node['cloud']['aws']['region'] %>
+  * **AMI ID:** <%= node['cloud']['aws']['automate']['ami_id'] %>
+  * **Instance type:** <%= node['cloud']['aws']['automate']['instance_type'] %>
+
+* Chef server <%= node['products']['versions']['chef_server']['ubuntu'].split('-')[1] %> on Amazon Web Services
+  * **Region:** <%= node['cloud']['aws']['region'] %>
+  * **AMI ID:** <%= node['cloud']['aws']['chef_server']['ami_id'] %>
+  * **Instance type:** <%= node['cloud']['aws']['chef_server']['instance_type'] %>
+
+* A CentOS 7 node on Amazon Web Services
+  * **Region:** <%= node['cloud']['aws']['region'] %>
+  * **AMI ID:** <%= node['cloud']['aws']['node']['ami_id'] %>
+  * **Instance type:** <%= node['cloud']['aws']['node']['instance_type'] %>
+  * **Software:** Chef client <%= @chef_client_version %>
+
+* An Ubuntu 14.04 workstation on Amazon Web Services
+  * **Region:** <%= node['cloud']['aws']['region'] %>
+  * **AMI ID:** <%= node['cloud']['aws']['workstation']['ami_id'] %>
+  * **Instance type:** <%= node['cloud']['aws']['workstation']['instance_type'] %>
+  * **Software:** Chef Development Kit <%= node['products']['versions']['chefdk']['ubuntu'].split('-')[1] %>

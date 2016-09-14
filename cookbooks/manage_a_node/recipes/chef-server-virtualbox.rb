@@ -39,8 +39,8 @@ with_snippet_options(step: 'vagrant-up-chef-server', cwd: '~/learn-chef/chef-ser
   snippet_execute 'vagrant-up' do
     command 'vagrant up'
     trim_stdout ({
-      from: /^\s+chef-server\: Progress\: 0% \(Rate\: 0\/s, Estimated time remaining: --\:--\:--\)/,
-      to: /^==> node1\:   autogen-libopts.+$\n/
+      from: /\s+chef-server: Progress: 0% \(Rate: 0\/s, Estimated time remaining: --:--:--\)/,
+      to: /^==> node1\:   autogen-libopts.+$/
     })
   end
 end

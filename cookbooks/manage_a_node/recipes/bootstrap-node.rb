@@ -35,7 +35,7 @@ with_snippet_options(step: 'bootstrap-your-node') do
   node1 = node['nodes']['rhel']['node1']
 
   case node['snippets']['virtualization']
-  when 'aws', 'aws-marketplace', 'azure-marketplace'
+  when 'aws-automate', 'aws-marketplace', 'azure-marketplace'
     node.run_state['bootstrap_command'] = "knife bootstrap #{node1['ip_address']} --ssh-user #{node1['ssh_user']} --sudo --identity-file #{node1['identity_file']} --node-name node1 --run-list '#{node1['run_list']}'"
   when 'hosted'
     # Place private key

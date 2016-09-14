@@ -402,7 +402,7 @@ resource "aws_instance" "workstation" {
       "recipe[manage_a_node]"
     ],
     "snippets": {
-      "virtualization": "aws"
+      "virtualization": "aws-automate"
     },
     "chef_server": {
       "fqdn": "${aws_instance.chef_server.public_dns}",
@@ -422,8 +422,35 @@ resource "aws_instance" "workstation" {
         }
       }
     },
+    "products": {
+      "versions": {
+        "automate": {
+          "ubuntu": "${var.delivery_channel}-${var.delivery_version}"
+        },
+        "chef_server": {
+          "ubuntu": "${var.chef_server_channel}-${var.chef_server_version}"
+        }
+      }
+    },
     "cloud": {
       "aws": {
+        "region": "${var.region}",
+        "automate": {
+          "ami_id": "${lookup(var.chef_automate, "ami")}",
+          "instance_type": "${lookup(var.chef_automate, "instance_type")}"
+        },
+        "chef_server": {
+          "ami_id": "${lookup(var.chef_server, "ami")}",
+          "instance_type": "${lookup(var.chef_server, "instance_type")}"
+        },
+        "workstation": {
+          "ami_id": "${lookup(var.workstation, "ami")}",
+          "instance_type": "${lookup(var.workstation, "instance_type")}"
+        },
+        "node": {
+          "ami_id": "${lookup(var.node1, "ami")}",
+          "instance_type": "${lookup(var.node1, "instance_type")}"
+        }
       }
     }
   }

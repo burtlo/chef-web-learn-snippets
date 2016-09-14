@@ -36,7 +36,7 @@ with_snippet_options(cwd: '~/learn-chef', step: 'add-template-code-to-your-html'
   node1 = node['nodes']['rhel']['node1']
 
   case node['snippets']['virtualization']
-  when 'hosted', 'aws', 'aws-marketplace', 'azure-marketplace'
+  when 'hosted', 'aws-automate', 'aws-marketplace', 'azure-marketplace'
     node.run_state['knife_ssh_command'] = "knife ssh #{node1['ip_address']} 'sudo chef-client' --manual-list --ssh-user #{node1['ssh_user']} --identity-file #{node1['identity_file']}"
   when 'virtualbox'
     ruby_block 'vagrant-ssh-config-node1-2' do
