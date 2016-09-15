@@ -1,27 +1,3 @@
-### WORKAROUND
-### The plan currently crashes
-### https://github.com/hashicorp/terraform/issues/8843
-### For now:
-### 1. Spin up Chef server (25 node license) manually
-### 2. Name it chef-server-azure-1
-### 3. Assign DNS chef-server-azure-1.eastus.cloudapp.azure.com
-### 4. Run these commands on the Chef server
-### $ mkdir ~/drop
-### $ until tail /var/log/cloud-init-output.log | grep 'finished at'; do sleep 1m; done;
-### $ sudo rm /var/opt/opscode/nginx/etc/nginx.d/analytics.conf
-### $ echo 'api_fqdn "chef-server-azure-1.eastus.cloudapp.azure.com"' | sudo tee -a /etc/chef-marketplace/marketplace.rb
-### $ sudo chef-marketplace-ctl hostname chef-server-azure-1.eastus.cloudapp.azure.com
-### $ sudo opscode-analytics-ctl reconfigure
-### $ sudo chef-server-ctl user-create admin Bob Admin admin@4thcoffee.com insecurepassword --filename ~/drop/admin.pem
-### $ sudo chef-server-ctl org-create 4thcoffee "Fourth Coffee, Inc." --association_user admin --filename 4thcoffee-validator.pem
-### 5. terraform apply
-###
-
-# WORKAROUND
-variable "chef_server_fqdn" {
-  default = "chef-server-azure-1.eastus.cloudapp.azure.com"
-}
-
 variable "subscription_id" {}
 variable "client_id" {}
 variable "client_secret" {}
@@ -214,71 +190,70 @@ resource "azurerm_public_ip" "node1" {
     }
 }
 
-# WORKAROUND: for now, we spin up manually
-# resource "azurerm_virtual_machine" "chef_server" {
-#     name = "${var.chef_server_hostname}"
-#     location = "${var.azure_location}"
-#     resource_group_name = "${azurerm_resource_group.test.name}"
-#     network_interface_ids = ["${azurerm_network_interface.chef_server.id}"]
-#     vm_size = "${var.chef_server_vm_size}"
+resource "azurerm_virtual_machine" "chef_server" {
+    name = "${var.chef_server_hostname}"
+    location = "${var.azure_location}"
+    resource_group_name = "${azurerm_resource_group.test.name}"
+    network_interface_ids = ["${azurerm_network_interface.chef_server.id}"]
+    vm_size = "${var.chef_server_vm_size}"
 
-#     storage_image_reference {
-#         publisher = "${lookup(var.chef_server_image_urn, "publisher")}"
-#         offer = "${lookup(var.chef_server_image_urn, "offer")}"
-#         sku = "${lookup(var.chef_server_image_urn, "sku")}"
-#         version = "${lookup(var.chef_server_image_urn, "version")}"
-#     }
+    storage_image_reference {
+        publisher = "${lookup(var.chef_server_image_urn, "publisher")}"
+        offer = "${lookup(var.chef_server_image_urn, "offer")}"
+        sku = "${lookup(var.chef_server_image_urn, "sku")}"
+        version = "${lookup(var.chef_server_image_urn, "version")}"
+    }
 
-#     plan {
-#         publisher = "${lookup(var.chef_server_image_urn, "publisher")}"
-#         product = "${lookup(var.chef_server_image_urn, "offer")}"
-#         name = "${lookup(var.chef_server_image_urn, "sku")}"
-#     }
+    plan {
+        publisher = "${lookup(var.chef_server_image_urn, "publisher")}"
+        product = "${lookup(var.chef_server_image_urn, "offer")}"
+        name = "${lookup(var.chef_server_image_urn, "sku")}"
+    }
 
-#     storage_os_disk {
-#         name = "learnchefosdisk_chef_server"
-#         vhd_uri = "${azurerm_storage_account.test.primary_blob_endpoint}${azurerm_storage_container.test.name}/learnchefosdisk_chef_server.vhd"
-#         caching = "ReadWrite"
-#         create_option = "FromImage"
-#     }
+    storage_os_disk {
+        name = "learnchefosdisk_chef_server"
+        vhd_uri = "${azurerm_storage_account.test.primary_blob_endpoint}${azurerm_storage_container.test.name}/learnchefosdisk_chef_server.vhd"
+        caching = "ReadWrite"
+        create_option = "FromImage"
+    }
 
-#     os_profile {
-#         computer_name = "${var.chef_server_hostname}"
-#         admin_username = "${var.username}"
-#         admin_password = "${var.password}"
-#     }
+    os_profile {
+        computer_name = "${var.chef_server_hostname}"
+        admin_username = "${var.username}"
+        admin_password = "${var.password}"
+    }
 
-#     os_profile_linux_config {
-#       disable_password_authentication = true
-#       ssh_keys {
-#         path = "/home/${var.username}/.ssh/authorized_keys"
-#         key_data = "${file("~/.ssh/id_rsa.pub")}" # public key on local machine
-#       }
-#     }
+    os_profile_linux_config {
+      disable_password_authentication = true
+      ssh_keys {
+        path = "/home/${var.username}/.ssh/authorized_keys"
+        key_data = "${file("~/.ssh/id_rsa.pub")}" # public key on local machine
+      }
+    }
 
-#     connection {
-#       host     = "${azurerm_public_ip.chef_server.ip_address}"
-#       user     = "${var.username}"
-#       key_file = "~/.ssh/id_rsa" # private key on my local machine
-#     }
+    connection {
+      host     = "${azurerm_public_ip.chef_server.ip_address}"
+      user     = "${var.username}"
+      key_file = "~/.ssh/id_rsa" # private key on my local machine
+    }
 
-#     tags {
-#       environment = "staging"
-#     }
+    tags {
+      environment = "staging"
+    }
 
-#     provisioner "remote-exec" {
-#       inline = [
-#         "mkdir ~/drop",
-#         "until [ $? -eq 0 ]; do sleep 1m && tail /var/log/cloud-init-output.log | grep 'finished at'; done;",
-#         "sudo rm /var/opt/opscode/nginx/etc/nginx.d/analytics.conf",
-#         "echo 'api_fqdn \"${azurerm_public_ip.chef_server.fqdn}\"' | sudo tee -a /etc/chef-marketplace/marketplace.rb",
-#         "sudo chef-marketplace-ctl hostname ${azurerm_public_ip.chef_server.fqdn}",
-#         "sudo opscode-analytics-ctl reconfigure",
-#         "sudo chef-server-ctl user-create admin Bob Admin admin@4thcoffee.com insecurepassword --filename ~/drop/admin.pem",
-#         "sudo chef-server-ctl org-create 4thcoffee \"Fourth Coffee, Inc.\" --association_user admin --filename 4thcoffee-validator.pem"
-#       ]
-#     }
-# }
+    provisioner "remote-exec" {
+      inline = [
+        "mkdir ~/drop",
+        "until [ $? -eq 0 ]; do sleep 1m && tail /var/log/cloud-init-output.log | grep 'finished at'; done;",
+        "sudo rm /var/opt/opscode/nginx/etc/nginx.d/analytics.conf",
+        "echo 'api_fqdn \"${azurerm_public_ip.chef_server.fqdn}\"' | sudo tee -a /etc/chef-marketplace/marketplace.rb",
+        "sudo chef-marketplace-ctl hostname ${azurerm_public_ip.chef_server.fqdn}",
+        "sudo opscode-analytics-ctl reconfigure",
+        "sudo chef-server-ctl user-create admin Bob Admin admin@4thcoffee.com insecurepassword --filename ~/drop/admin.pem",
+        "sudo chef-server-ctl org-create 4thcoffee \"Fourth Coffee, Inc.\" --association_user admin --filename 4thcoffee-validator.pem"
+      ]
+    }
+}
 
 
 resource "azurerm_virtual_machine" "node1" {
@@ -363,7 +338,7 @@ resource "azurerm_virtual_machine" "workstation" {
     }
 
     provisioner "file" {
-      source = "~/.ssh/id_rsa"
+      source = "${var.ssh_key_file}"
       destination = "~/.ssh/private_key"
     }
 
@@ -372,7 +347,7 @@ resource "azurerm_virtual_machine" "workstation" {
         # Set local file permissions
         "chmod 0600 ~/.ssh/private_key",
         # Retrieve the admin key - wait for it to become available.
-        "until scp -i ~/.ssh/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${var.username}@${var.chef_server_fqdn}:~/drop/admin.pem /tmp/admin.pem; do sleep 1m; done;",
+        "until [ $? -eq 0 ]; do sleep 1m && scp -i ~/.ssh/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${var.username}@${azurerm_public_ip.chef_server.ip_address}:~/drop/admin.pem /tmp/admin.pem; done;",
       ]
     }
 
@@ -396,7 +371,7 @@ resource "azurerm_virtual_machine" "workstation" {
         "virtualization": "azure-marketplace"
       },
       "chef_server": {
-        "fqdn": "${var.chef_server_fqdn}",
+        "fqdn": "${azurerm_public_ip.chef_server.fqdn}",
         "org": "4thcoffee"
       },
       "nodes": {
@@ -413,17 +388,9 @@ resource "azurerm_virtual_machine" "workstation" {
       "cloud": {
         "azure": {
           "location": "${var.azure_location}",
-          "chef_server": {
+          "node": {
             "image_urn": "${lookup(var.chef_server_image_urn, "publisher")}:${lookup(var.chef_server_image_urn, "offer")}:${lookup(var.chef_server_image_urn, "sku")}:${lookup(var.chef_server_image_urn, "version")}",
             "size": "${var.chef_server_vm_size}"
-          },
-          "workstation": {
-            "image_urn": "${lookup(var.workstation_image_urn, "publisher")}:${lookup(var.workstation_image_urn, "offer")}:${lookup(var.workstation_image_urn, "sku")}:${lookup(var.workstation_image_urn, "version")}",
-            "size": "Standard_D1"
-          },
-          "node": {
-            "image_urn": "${lookup(var.node1_image_urn, "publisher")}:${lookup(var.node1_image_urn, "offer")}:${lookup(var.node1_image_urn, "sku")}:${lookup(var.node1_image_urn, "version")}",
-            "size": "Standard_D1"
           }
         }
       }

@@ -26,4 +26,9 @@ action :write do
     source "machine_config_#{virtualization}.md.erb"
     variables new_resource.variables
   end
+
+  # Post-process file.
+  file config_filename do
+    content ::File.open(config_filename).read.gsub('_', '\_')
+  end
 end

@@ -1,0 +1,18 @@
+This tutorial was last tested using this configuration:
+
+* Chef server <%= node['products']['versions']['chef_server']['ubuntu'].split('-')[1] %> on Microsoft Azure
+  * **Location:** <%= node['cloud']['azure']['location'] %>
+  * **Image URN:** <%= node['cloud']['azure']['chef_server']['image_urn'] %>
+  * **Size:** <%= node['cloud']['azure']['chef_server']['size'] %>
+<br><br>
+* A CentOS 7 node on Microsoft Azure
+  * **Location:** <%= node['cloud']['azure']['location'] %>
+  * **Image URN:** <%= node['cloud']['azure']['node']['image_urn'] %>
+  * **Size:** <%= node['cloud']['azure']['node']['size'] %>
+  * **Software:** Chef client <%= @chef_client_version %>
+<br><br>
+* An Ubuntu 14.04 workstation on Microsoft Azure
+  * **Location:** <%= node['cloud']['azure']['location'] %>
+  * **Image URN:** <%= node['cloud']['azure']['workstation']['image_urn'] %>
+  * **Size:** <%= node['cloud']['azure']['workstation']['size'] %>
+  * **Software:** Chef Development Kit <%= node['products']['versions']['chefdk']['ubuntu'].split('-')[1] %>
