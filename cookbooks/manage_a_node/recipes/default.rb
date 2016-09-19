@@ -21,7 +21,7 @@ include_recipe 'manage_a_node::resolve-failure'
 snippet_config 'manage-a-node' do
   variables lazy {
     ({
-      chef_client_version: ::File.open('tmp/node1-chef-client-version').read
+      chef_client_version: ::File.open('tmp/node1-chef-client-version').read.strip
     })
   }
 end

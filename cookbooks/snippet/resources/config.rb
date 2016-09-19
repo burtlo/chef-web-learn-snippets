@@ -29,6 +29,6 @@ action :write do
 
   # Post-process file.
   file config_filename do
-    content ::File.open(config_filename).read.gsub('_', '\_')
+    content lazy { ::File.open(config_filename).read.gsub('_', '\_') }
   end
 end
