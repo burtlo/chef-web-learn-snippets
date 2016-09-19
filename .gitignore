@@ -1,3 +1,4 @@
+.DS_Store
 .vagrant
 snippets
 vendored-cookbooks
@@ -5,3 +6,5 @@ terraform.tfvars
 terraform.tfstate
 terraform.tfstate.backup
 secrets
+.chef
+crash.log

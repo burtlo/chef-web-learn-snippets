@@ -1,0 +1,127 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+chef_version = "stable-12.12.15"
+
+chef_server = {
+  aws_region: "us-east-1",
+  ami_id: "ami-94f51df9",
+  instance_type: "t2.medium"
+}
+
+Vagrant.configure(2) do |config|
+
+  config.vm.box = "bento/ubuntu-14.04"
+
+  # cache rules everything around me
+  if Vagrant.has_plugin?("vagrant-cachier")
+    config.cache.scope = :box
+    config.cache.auto_detect = true
+  end
+
+  config.vm.provider :aws do |aws, override|
+    override.vm.box = "vagrant-aws-dummy"
+
+    aws.access_key_id = ENV['AWS_ACCESS_KEY_ID']
+    aws.secret_access_key = ENV['AWS_SECRET_ACCESS_KEY']
+    aws.keypair_name = ENV['AWS_KEYPAIR_NAME']
+    aws.region = chef_server[:aws_region]
+    aws.ami = chef_server[:ami_id]
+    aws.instance_type = chef_server[:instance_type]
+    aws.security_groups = ["Chef server"]
+    # https://github.com/mitchellh/vagrant/issues/1482
+
+    aws.user_data = <<EOH
+#!/bin/bash
+sed -i -e 's/^Defaults.*requiretty/# Defaults requiretty/g' /etc/sudoers
+sed -i -e 's/^Defaults.*!visiblepw/# Defaults !visiblepw/g' /etc/sudoers
+EOH
+    # https://github.com/mitchellh/vagrant-aws/issues/340
+    override.ssh.username = "ec2-user"
+    override.ssh.private_key_path = ENV['AWS_PRIVATE_KEY_PATH']
+    override.nfs.functional = false # https://github.com/mitchellh/vagrant/issues/5401
+  end
+
+  # Bootstrap using key-based authentication
+  config.vm.provider "vmware_fusion" do |v, override|
+    v.memory = 512
+    override.vm.box = "bento/centos-7.2"
+    override.vm.hostname = "node1"
+    override.vm.network "private_network", ip: "192.168.145.134"
+  end
+
+  #
+  # # Bootstrap a using a forwarded port
+  # config.vm.define "node2-centos-7.2" do |cs|
+  #   cs.vm.box = "bento/centos-7.2"
+  #   cs.vm.hostname = "node1"
+  #   cs.vm.network "private_network", ip: "192.168.145.134"
+  #
+  #   cs.vm.network "forwarded_port", guest: 22, host: 2400, id: "ssh"
+  #
+  #   cs.vm.provider "vmware_fusion" do |v|
+  #     v.memory = 256
+  #   end
+  # end
+  #
+  # # Bootstrap using a username and password
+  # config.vm.define "node3-centos-7.2" do |cs|
+  #   cs.vm.box = "bento/centos-7.2"
+  #   cs.vm.hostname = "node1"
+  #   cs.vm.network "private_network", ip: "192.168.145.135"
+  #
+  #   config.ssh.username = 'vagrant'
+  #   config.ssh.password = 'vagrant'
+  #   config.ssh.insert_key = 'true'
+  #
+  #   cs.vm.provider "vmware_fusion" do |v|
+  #     v.memory = 256
+  #   end
+  # end
+  #
+  # config.vm.define "workstation-ubuntu-14.04" do |cs|
+  #   cs.vm.hostname = "workstation-ubuntu-1404"
+  #   cs.vm.network "private_network", ip: "192.168.145.132"
+  #
+  #   cs.vm.provider "vmware_fusion" do |v|
+  #     v.memory = 1024
+  #   end
+  #
+  #   cs.vm.provision "chef_solo" do |chef|
+  #     chef.product = "chef"
+  #     chef.channel = chef_version.split('-')[0]
+  #     chef.version = chef_version.split('-')[1]
+  #     chef.cookbooks_path = "vendored-cookbooks"
+  #     chef.add_recipe "manage_a_node::default"
+  #     chef.log_level = "warn"
+  #     chef.json = {
+  #       "nodes" => {
+  #         "rhel" => {
+  #           "node1" => {
+  #             "name" => "node1-centos-7.2",
+  #             "identity_file" => "~/.ssh/private_key",
+  #             "ip_address" => "192.168.145.134",
+  #             "ssh_user" => "vagrant",
+  #             "run_list" => "recipe[learn_chef_httpd]"
+  #           },
+  #           "node2" => {
+  #             "name" => "node2-centos-7.2",
+  #             "identity_file" => "~/.ssh/private_key",
+  #             "ip_address" => "192.168.145.134",
+  #             "ssh_user" => "vagrant",
+  #             "ssh_port" => 2201,
+  #             "run_list" => "recipe[learn_chef_httpd]"
+  #           },
+  #           "node3" => {
+  #             "name" => "node3-centos-7.2",
+  #             "password" => "vagrant",
+  #             "ip_address" => "192.168.145.135",
+  #             "ssh_user" => "root",
+  #             "ssh_port" => 2400,
+  #             "run_list" => "recipe[learn_chef_httpd]"
+  #           }
+  #         }
+  #       }
+  #     }
+  #   end
+  # end
+end
