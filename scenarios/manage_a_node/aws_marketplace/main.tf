@@ -254,6 +254,19 @@ resource "aws_instance" "workstation" {
     },
     "cloud": {
       "aws": {
+        "region": "${var.region}",
+        "chef_server": {
+          "ami_id": "${lookup(var.chef_server, "ami")}",
+          "instance_type": "${lookup(var.chef_server, "instance_type")}"
+        },
+        "workstation": {
+          "ami_id": "${lookup(var.workstation, "ami")}",
+          "instance_type": "${lookup(var.workstation, "instance_type")}"
+        },
+        "node": {
+          "ami_id": "${lookup(var.node1, "ami")}",
+          "instance_type": "${lookup(var.node1, "instance_type")}"
+        }
       }
     }
   }
