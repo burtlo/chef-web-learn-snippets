@@ -9,19 +9,19 @@ directory ::File.expand_path('~/.ssh')
 
 # Copy credentials.
 file ::File.expand_path('~/.aws/credentials')  do
-  content ::File.open("/vagrant/secrets/credentials").read
+  content ::File.read("/vagrant/secrets/credentials")
 end
 file ::File.expand_path('~/.aws/config')  do
-  content ::File.open("/vagrant/secrets/config").read
+  content ::File.read("/vagrant/secrets/config")
 end
 file ::File.expand_path('~/.ssh/private_key')  do
-  content ::File.open("/vagrant/secrets/private_key").read
+  content ::File.read("/vagrant/secrets/private_key")
   mode '0600'
 end
 
 ruby_block 'set-aws-envvars' do
   block do
-    s = ::File.open("/vagrant/secrets/credentials").read
+    s = ::File.read("/vagrant/secrets/credentials")
     ENV["AWS_ACCESS_KEY_ID"] = s.match(/^aws_access_key_id=(.*)$/)[1]
     ENV["AWS_SECRET_ACCESS_KEY"] = s.match(/^aws_secret_access_key=(.*)$/)[1]
   end

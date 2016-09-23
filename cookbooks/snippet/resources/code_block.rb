@@ -15,6 +15,8 @@ property :source_filename, String, required: false
 # The source files content
 property :content, String, required: false
 property :language, [ String, nil ], default: nil
+property :write_system_file, [ TrueClass, FalseClass ], default: true
+property :left_justify, [ TrueClass, FalseClass ], default: false
 
 def initialize(*args)
   super
@@ -53,16 +55,18 @@ action :create do
   }
 
   # Copy the file locally.
-  directory scenario_directory_name do
-    recursive true
-  end
-  if source_filename
-    cookbook_file scenario_full_path do
-      source source_filename
+  if write_system_file
+    directory scenario_directory_name do
+      recursive true
     end
-  else
-    file scenario_full_path do
-      content new_resource.content
+    if source_filename
+      cookbook_file scenario_full_path do
+        source source_filename
+      end
+    else
+      file scenario_full_path do
+        content new_resource.content
+      end
     end
   end
 
@@ -82,6 +86,13 @@ action :create do
   else
     file snippet_code_fullpath do
       content new_resource.content
+    end
+  end
+
+  if left_justify
+    file "#{snippet_code_fullpath}-unindent" do
+      path snippet_code_fullpath
+      content lazy { ::File.read(snippet_code_fullpath).unindent }
     end
   end
 end
@@ -104,6 +115,8 @@ def map_language(file_path)
   case file_ext
   when '.rb'
     'ruby'
+  when '.yml'
+    'yaml'
   when '.htm', '.html'
     'html'
   when '.erb'

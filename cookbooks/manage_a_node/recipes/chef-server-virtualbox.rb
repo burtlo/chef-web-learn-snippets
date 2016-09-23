@@ -32,7 +32,7 @@ with_snippet_options(step: 'vagrant-up-chef-server', cwd: '~/learn-chef/chef-ser
   # Write Vagrantfile.
   snippet_code_block 'vagrantfile' do
     file_path '~/learn-chef/chef-server/Vagrantfile'
-    content lazy { ::File.open('/tmp/Vagrantfile').read }
+    content lazy { ::File.read('/tmp/Vagrantfile') }
   end
 
   # Vagrant up.

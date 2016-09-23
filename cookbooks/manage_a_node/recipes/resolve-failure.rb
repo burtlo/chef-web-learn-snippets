@@ -11,7 +11,7 @@ with_snippet_options(cwd: '~/learn-chef', step: 'set-web-content-owner') do
   snippet_code_block 'initial-default-recipe' do
     file_path '~/learn-chef/cookbooks/learn_chef_httpd/recipes/default.rb'
     content lazy {
-      ::File.open(::File.expand_path('~/learn-chef/cookbooks/learn_chef_httpd/recipes/default.rb')).read
+      ::File.read(::File.expand_path('~/learn-chef/cookbooks/learn_chef_httpd/recipes/default.rb'))
     }
   end
 
@@ -24,7 +24,7 @@ with_snippet_options(cwd: '~/learn-chef', step: 'set-web-content-owner') do
   # Update metadata.
   snippet_code_block 'metadata-0-3-0' do
     file_path '~/learn-chef/cookbooks/learn_chef_httpd/metadata.rb'
-    content lazy { ::File.open(::File.expand_path('~/learn-chef/cookbooks/learn_chef_httpd/metadata.rb')).read.sub("version '0.2.0'", "version '0.3.0'") }
+    content lazy { ::File.read(::File.expand_path('~/learn-chef/cookbooks/learn_chef_httpd/metadata.rb')).sub("version '0.2.0'", "version '0.3.0'") }
   end
 
   # Upload your cookbook to the Chef server
@@ -52,7 +52,7 @@ with_snippet_options(cwd: '~/learn-chef', step: 'set-web-content-owner') do
   # Update metadata.
   snippet_code_block 'metadata-0-3-1' do
     file_path '~/learn-chef/cookbooks/learn_chef_httpd/metadata.rb'
-    content lazy { ::File.open(::File.expand_path('~/learn-chef/cookbooks/learn_chef_httpd/metadata.rb')).read.sub("version '0.3.0'", "version '0.3.1'") }
+    content lazy { ::File.read(::File.expand_path('~/learn-chef/cookbooks/learn_chef_httpd/metadata.rb')).sub("version '0.3.0'", "version '0.3.1'") }
   end
 
   # Upload your cookbook to the Chef server

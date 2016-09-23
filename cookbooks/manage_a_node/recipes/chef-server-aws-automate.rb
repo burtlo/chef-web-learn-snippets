@@ -31,11 +31,11 @@ with_snippet_options(step: 'generate-knife-config') do
 
   snippet_code_block 'knife-rb' do
     file_path '~/learn-chef/.chef/knife.rb'
-    content lazy { ::File.open('/tmp/knife.rb').read }
+    content lazy { ::File.read('/tmp/knife.rb') }
   end
 
   file ::File.expand_path("~/learn-chef/.chef/delivery.pem") do
-    content ::File.open("/tmp/delivery.pem").read
+    content ::File.read("/tmp/delivery.pem")
   end
 
 end

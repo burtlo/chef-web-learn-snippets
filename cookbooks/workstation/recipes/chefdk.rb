@@ -34,8 +34,8 @@ snippet_execute 'chef-version' do
   shell shell
 end
 
-snippet_execute 'chef-verify' do
-  command "chef verify"
-  step 'verify-chef-dk'
-  shell shell
-end
+# snippet_execute 'chef-verify' do
+#   command "chef verify"
+#   step 'verify-chef-dk'
+#   shell shell
+# end

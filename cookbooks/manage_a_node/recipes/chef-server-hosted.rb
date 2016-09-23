@@ -19,7 +19,7 @@ end
 
 %w[chef-user-1.pem].each do |f|
   file ::File.expand_path("~/learn-chef/.chef/#{f}") do
-    content ::File.open("/vagrant/.chef/#{f}").read
+    content ::File.read("/vagrant/.chef/#{f}")
   end
 end
 
@@ -27,7 +27,7 @@ with_snippet_options(step: 'generate-knife-config') do
 
   snippet_code_block 'knife-rb' do
     file_path '~/learn-chef/.chef/knife.rb'
-    content lazy { ::File.open("/vagrant/.chef/knife.rb").read }
+    content lazy { ::File.read("/vagrant/.chef/knife.rb") }
   end
 
 end

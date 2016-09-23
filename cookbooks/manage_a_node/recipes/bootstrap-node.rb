@@ -41,7 +41,7 @@ with_snippet_options(step: 'bootstrap-your-node') do
     # Place private key
     file "node1-private-key"  do
       path ::File.expand_path(node1['identity_file'])
-      content ::File.open("/vagrant/.vagrant/machines/#{node1['name']}/vmware_fusion/private_key").read
+      content ::File.read("/vagrant/.vagrant/machines/#{node1['name']}/vmware_fusion/private_key")
       mode '0600'
     end
     node.run_state['bootstrap_command'] = "knife bootstrap #{node1['ip_address']} --ssh-user #{node1['ssh_user']} --sudo --identity-file #{node1['identity_file']} --node-name node1 --run-list '#{node1['run_list']}'"
