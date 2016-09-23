@@ -7,6 +7,7 @@ if node['platform_family'] == 'debian'
   apt_update 'update the apt cache' do
     action :periodic
   end
+  package 'tree'
 end
 
 if node['platform_family'] == 'windows'

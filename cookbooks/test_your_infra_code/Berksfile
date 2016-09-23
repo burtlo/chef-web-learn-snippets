@@ -1,0 +1,6 @@
+source 'https://supermarket.chef.io'
+
+metadata
+
+cookbook 'snippet', path: '../snippet'
+cookbook 'workstation', path: '../workstation'

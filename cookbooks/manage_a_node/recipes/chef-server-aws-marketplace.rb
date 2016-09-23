@@ -33,12 +33,12 @@ with_snippet_options(step: 'generate-knife-config') do
 
   snippet_code_block 'knife-rb' do
     file_path '~/learn-chef/.chef/knife.rb'
-    content lazy { ::File.open('/tmp/knife.rb').read }
+    content lazy { ::File.read('/tmp/knife.rb') }
   end
 
   # TODO: When you consolidate, address this too.
   file ::File.expand_path("~/learn-chef/.chef/admin.pem") do
-   content ::File.open("/tmp/admin.pem").read
+   content ::File.read("/tmp/admin.pem")
   end
 
 end

@@ -17,14 +17,14 @@ with_snippet_options(cwd: '~/learn-chef', step: 'add-template-code-to-your-html'
   snippet_code_block 'metadata-0-1-0' do
     file_path '~/learn-chef/cookbooks/learn_chef_httpd/metadata.rb'
     content lazy {
-      ::File.open(::File.expand_path('~/learn-chef/cookbooks/learn_chef_httpd/metadata.rb')).read
+      ::File.read(::File.expand_path('~/learn-chef/cookbooks/learn_chef_httpd/metadata.rb'))
     }
   end
 
   # Update metadata.
   snippet_code_block 'metadata-0-2-0' do
     file_path '~/learn-chef/cookbooks/learn_chef_httpd/metadata.rb'
-    content lazy { ::File.open(::File.expand_path('~/learn-chef/cookbooks/learn_chef_httpd/metadata.rb')).read.sub("version '0.1.0'", "version '0.2.0'") }
+    content lazy { ::File.read(::File.expand_path('~/learn-chef/cookbooks/learn_chef_httpd/metadata.rb')).sub("version '0.1.0'", "version '0.2.0'") }
   end
 
   # Upload your cookbook to the Chef server

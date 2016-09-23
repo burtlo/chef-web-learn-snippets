@@ -1,0 +1,11 @@
+name 'test_your_infra_code'
+maintainer 'The Authors'
+maintainer_email 'you@example.com'
+license 'all_rights'
+description 'Installs/Configures test_your_infra_code'
+long_description 'Installs/Configures test_your_infra_code'
+version '0.1.0'
+
+depends 'snippet'
+depends 'workstation'
+depends 'git', '~> 4.6.0'

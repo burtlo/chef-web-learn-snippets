@@ -28,7 +28,8 @@ action :write do
   end
 
   # Post-process file.
+  # The file is Markdown, so we need to escape common characters.
   file config_filename do
-    content lazy { ::File.open(config_filename).read.gsub('_', '\_') }
+    content lazy { ::File.read(config_filename).gsub('_', '\_') }
   end
 end

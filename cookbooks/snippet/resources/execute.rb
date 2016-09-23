@@ -14,7 +14,9 @@ property :cwd, [ String, nil ], default: nil
 property :trim_stdout, [ Array, Hash, nil ], default: nil
 property :remove_lines_matching, [ Array, String, Regexp, nil ], default: nil
 property :trim_stderr, [ Array, Hash, nil ], default: nil
+property :excerpt_stdout, [ Array, Hash, nil ], default: nil
 property :prompt_character, [ String, nil ], default: nil
+property :left_justify, [ TrueClass, FalseClass ], default: false
 
 def initialize(*args)
   super
@@ -99,6 +101,12 @@ action :run do
   stdout = trim_output(clean_stdout, trim_stdout)
   stdout = remove_lines(stdout, [remove_lines_matching].flatten) if remove_lines_matching
   stderr = trim_output(result.stderr, trim_stderr)
+  stdout = excerpt_output(stdout, excerpt_stdout) if excerpt_stdout
+
+  if left_justify
+    stdout.unindent!
+    stderr.unindent!
+  end
 
   # Write stdout.
   file ::File.join(snippet_full_path, 'stdout') do
@@ -121,6 +129,18 @@ def trim_output(output, regions)
   output
 end
 
+def excerpt_output(output, excerpts)
+  lines = output.lines
+  [excerpts].flatten.each do |excerpt|
+    start = -1
+    lines.each_with_index do |line, index|
+      start = index if start == -1 && line =~ excerpt[:from]
+      return lines[start..index].join("\n") if start != -1 && line =~ excerpt[:to]
+    end
+  end
+  output
+end
+
 def remove_lines(content, matchers)
   output = []
   content.lines.each do |line|
@@ -131,9 +151,18 @@ end
 
 # Performs necessary translation some commands require.
 def translate_command
-  if command == 'chef verify'
-    # https://github.com/chef/chef-dk/issues/928
-    'TERM=xterm-256color chef verify'
+  platform = node['platform']
+  if platform == 'windows' && command =~ /cd\s+~/
+    # Windows doesn't seem to like running `cd ~/path`. Expand the path fully.
+    m = command.match /cd\s+(~.+)/
+    "cd #{::File.expand_path(m[1])}"
+  elsif command == 'chef verify'
+    if platform == 'windows'
+      'chef verify'
+    else
+      # https://github.com/chef/chef-dk/issues/928
+      'TERM=xterm-256color chef verify'
+    end
   elsif command =~ /^chef-client/ || command =~ /^ sudo chef-client/
     translate_chef_client_command
   elsif command =~ /knife/
@@ -164,11 +193,18 @@ end
 # becomes:
 #   - create new directory cookbooks/learn_chef_httpd/templates/default
 def clean_output(output)
-  if command =~ /^chef\s/ || command =~ /^knife\s/
-    output.gsub(/\[\d+m/, '').gsub(/^(.*)\[\d+m/, '\1')
-  elsif command =~ /^vagrant\s/
-    output.gsub(/\[K/, '') # clear out K markers
-  else
-    output
+  cleaned_output = []
+  output.lines.each do |line|
+    clean_line = line.gsub(/\[\d+m/, '').gsub(/^(.*)\[\d+m/, '\1')
+    unwanted = [/setlocale/, /\[K/]
+    cleaned_output << clean_line unless unwanted.any? { |s| clean_line =~ s }
   end
+  cleaned_output.join("\n")
+  # if command =~ /^chef\s/ || command =~ /^knife\s/
+  #   output.gsub(/\[\d+m/, '').gsub(/^(.*)\[\d+m/, '\1')
+  # elsif command =~ /^vagrant\s/
+  #   output.gsub(/\[K/, '') # clear out K markers
+  # else
+  #   output
+  # end
 end
