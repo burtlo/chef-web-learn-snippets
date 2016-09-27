@@ -30,6 +30,14 @@ module LearnChef
     node.default['platform'] =~ /windows/ ? 'windows' : 'linux'
   end
 
+  def api_call_value(key)
+    h = node.run_state['api_data']
+    key.split("/").each do |k|
+      h = h[k]
+    end
+    h
+  end
+
   private
 
   @@options = {}

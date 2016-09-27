@@ -1,0 +1,10 @@
+This tutorial was last tested with this configuration:
+
+* An Ubuntu 14.04 workstation on VMWare Fusion.
+  * **Software:** Vagrant <%= node['products']['versions']['vagrant']['ubuntu'] %>, VirtualBox <%= node['products']['versions']['virtualbox']['ubuntu'] %>
+
+* Chef compliance server <%= node['products']['versions']['compliance']['ubuntu'].split('-')[1] %> on Ubuntu 14.04 running on VMWare Fusion.
+
+* Chef server <%= node['products']['versions']['chef_server']['ubuntu'].split('-')[1] %> on Ubuntu 14.04 running on VMWare Fusion.
+
+* A CentOS 7.2 node on VirtualBox, Chef client <%= @chef_client_version %>.

@@ -125,7 +125,7 @@ def map_language(file_path)
   when ''
     basename = ::File.basename(file_path)
     case basename
-    when 'Vagrantfile'
+    when 'Vagrantfile', 'sshd_config'
       'ruby'
     else
       nil

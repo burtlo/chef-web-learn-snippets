@@ -1,0 +1,147 @@
+# encoding: utf-8
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+chef_server_version = 'stable-12.9.0'
+chef_compliance_version = 'stable-1.5.14'
+
+compliance_username = "john-smith"
+compliance_password = "P4ssw0rd!"
+
+CHEF_SERVER_SCRIPT = <<EOF.freeze
+# install chef server
+echo "Installing Chef Server..."
+apt-get update
+apt-get -y install curl
+
+# ensure the time is up to date
+apt-get -y install ntp
+service ntp stop
+ntpdate -s time.nist.gov
+service ntp start
+
+if [ ! -f /downloads/chef-server-core_#{chef_server_version.split('-')[1]}_amd64.deb ]; then
+  wget -P /downloads https://packages.chef.io/#{chef_server_version.split('-')[0]}/ubuntu/14.04/chef-server-core_#{chef_server_version.split('-')[1]}-1_amd64.deb
+fi
+sudo dpkg -i /downloads/chef-server-core_#{chef_server_version.split('-')[1]}-1_amd64.deb
+
+sudo chef-server-ctl reconfigure
+
+# install chef manage
+echo "Install Chef Manage"
+sudo chef-server-ctl install chef-manage
+sudo chef-server-ctl reconfigure
+sudo chef-manage-ctl reconfigure --accept-license
+
+# restart services
+sudo chef-server-ctl restart
+
+# create admin user
+echo "Creating users and organization..."
+sudo chef-server-ctl user-create admin Bob Admin admin@4thcoffee.com insecurepassword --filename admin.pem
+sudo chef-server-ctl org-create 4thcoffee "Fourth Coffee, Inc." --association_user admin --filename 4thcoffee-validator.pem
+
+echo "Synchronizing admin and validator keys..."
+mkdir -p /vagrant/secrets
+cp -f /home/vagrant/admin.pem /vagrant/secrets
+cp -f /home/vagrant/4thcoffee-validator.pem /vagrant/secrets
+
+echo "Your Chef server is ready!"
+EOF
+
+CHEF_COMPLIANCE_SCRIPT = <<EOF.freeze
+# install chef compliance
+echo "Installing Chef compliance..."
+apt-get update
+apt-get -y install curl
+
+# ensure the time is up to date
+apt-get -y install ntp
+service ntp stop
+ntpdate -s time.nist.gov
+service ntp start
+
+if [ ! -f /downloads/chef-compliance-core_#{chef_compliance_version.split('-')[1]}_amd64.deb ]; then
+  wget -P /downloads https://packages.chef.io/#{chef_compliance_version.split('-')[0]}/ubuntu/14.04/chef-compliance_#{chef_compliance_version.split('-')[1]}-1_amd64.deb
+fi
+sudo dpkg -i /downloads/chef-compliance_#{chef_compliance_version.split('-')[1]}-1_amd64.deb
+
+sudo chef-compliance-ctl reconfigure --accept-license
+sudo chef-compliance-ctl restart
+
+# Add a user
+sudo chef-compliance-ctl user-create #{compliance_username} #{compliance_password}
+
+echo "Your Chef compliance scanner is ready!"
+EOF
+
+
+NODE_SCRIPT = <<EOF.freeze
+echo "Preparing node..."
+yum -y install ntp
+systemctl start ntpd
+systemctl enable ntpd
+
+# !requiretty
+sudo sed -i -e 's/^Defaults.*requiretty/Defaults !requiretty/g' /etc/sudoers
+
+# PasswordAuthentication no
+sudo sed -i -e 's/^PasswordAuthentication.*yes/PasswordAuthentication no/g' /etc/ssh/sshd_config
+sudo service sshd restart
+
+echo "10.1.1.33 chef-server.test" | tee -a /etc/hosts
+echo "10.1.1.34 chef-compliance.test" | tee -a /etc/hosts
+
+if [ ! -d ~/.ssh ]; then
+  mkdir ~/.ssh
+fi
+sudo cp /tmp/node1 ~/.ssh/node1
+sudo cp /tmp/node1.pub ~/.ssh/node1.pub
+sudo chmod 600 ~/.ssh/node1
+sudo touch ~/.ssh/authorized_keys
+sudo cat ~/.ssh/node1.pub >> ~/.ssh/authorized_keys
+EOF
+
+def set_hostname(server)
+  server.vm.provision 'shell', inline: "hostname #{server.vm.hostname}"
+end
+
+Vagrant.configure(2) do |config|
+
+  config.vm.define 'chef-server' do |cs|
+    cs.vm.box = 'bento/ubuntu-14.04'
+    cs.vm.hostname = 'chef-server.test'
+    cs.vm.network 'private_network', ip: '10.1.1.33'
+    cs.vm.provision 'shell', inline: CHEF_SERVER_SCRIPT.dup
+    set_hostname(cs)
+
+    cs.vm.provider 'vmware_fusion' do |v|
+      v.memory = 2048
+      v.cpus = 1
+    end
+  end
+
+  config.vm.define 'chef-compliance' do |cs|
+    cs.vm.box = 'bento/ubuntu-14.04'
+    cs.vm.hostname = 'chef-compliance.test'
+    cs.vm.network 'private_network', ip: '10.1.1.34'
+    cs.vm.provision 'shell', inline: CHEF_COMPLIANCE_SCRIPT.dup
+    set_hostname(cs)
+
+    cs.vm.provider 'vmware_fusion' do |v|
+      v.memory = 1024
+      v.cpus = 1
+    end
+  end
+
+  config.vm.define 'node1' do |n|
+    n.vm.box = 'bento/centos-7.2'
+    n.vm.hostname = 'node1.test'
+    n.vm.network 'private_network', ip: '10.1.1.35'
+    n.vm.provision 'file', source: '../../shared/files/node1', destination: '/tmp/node1'
+    n.vm.provision 'file', source: '../../shared/files/node1.pub', destination: '/tmp/node1.pub'
+    n.vm.provision :shell, inline: NODE_SCRIPT.dup
+    set_hostname(n)
+  end
+
+end

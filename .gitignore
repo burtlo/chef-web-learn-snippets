@@ -8,3 +8,4 @@ terraform.tfstate.backup
 secrets
 .chef
 crash.log
+compliance_api_data
