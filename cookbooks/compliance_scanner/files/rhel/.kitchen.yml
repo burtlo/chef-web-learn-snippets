@@ -7,6 +7,8 @@ provisioner:
 
 verifier:
   name: inspec
+  inspec_tests:
+    - compliance://cis/cis-centos7-level1
 
 platforms:
   - name: centos-7.2
@@ -14,5 +16,5 @@ platforms:
 suites:
   - name: default
     run_list:
-      - recipe[email::default]
+      - recipe[ssh::default]
     attributes:

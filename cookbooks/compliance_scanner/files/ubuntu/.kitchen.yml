@@ -7,12 +7,14 @@ provisioner:
 
 verifier:
   name: inspec
+  inspec_tests:
+    - compliance://cis/cis-ubuntu14.04lts-level1
 
 platforms:
-  - name: centos-7.2
+  - name: ubuntu-14.04
 
 suites:
   - name: default
     run_list:
-      - recipe[email::default]
+      - recipe[ufw::default]
     attributes:

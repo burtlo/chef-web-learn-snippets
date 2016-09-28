@@ -1,4 +1,5 @@
 include LearnChef::SnippetHelpers
+include LearnChef::ComplianceHelpers
 include Chef::Mixin::ShellOut
 
 property :id, String, required: true, name_property: true
@@ -156,6 +157,9 @@ def translate_command
     # Windows doesn't seem to like running `cd ~/path`. Expand the path fully.
     m = command.match /cd\s+(~.+)/
     "cd #{::File.expand_path(m[1])}"
+  elsif command =~ /^inspec/
+    # inspec doesn't seem to work until reboot
+    "/opt/chefdk/embedded/bin/" + command
   elsif command == 'chef verify'
     if platform == 'windows'
       'chef verify'
@@ -163,7 +167,7 @@ def translate_command
       # https://github.com/chef/chef-dk/issues/928
       'TERM=xterm-256color chef verify'
     end
-  elsif command =~ /^chef-client/ || command =~ /^ sudo chef-client/
+  elsif command =~ /^chef-client/ || command =~ /^sudo chef-client/
     translate_chef_client_command
   elsif command =~ /knife/
     # Not sure why, but from shell_out, knife.rb isn't found unless you specify the config file path.
@@ -188,14 +192,16 @@ def translate_chef_client_command
 end
 
 # Commands such as `chef` colorize output and don't provide a way to suppress colorization.
-# Example:
+# Examples:
 #   [32m- create new directory cookbooks/learn_chef_httpd/templates/default[0m
-# becomes:
+#   [31;1m  ✖  xccdf_org.cisecurity.benchmarks_rule_6.2.1_Set_SSH_Protocol_to_2:
+# become:
 #   - create new directory cookbooks/learn_chef_httpd/templates/default
+#     ✖  xccdf_org.cisecurity.benchmarks_rule_6.2.1_Set_SSH_Protocol_to_2:
 def clean_output(output)
   cleaned_output = []
   output.lines.each do |line|
-    clean_line = line.gsub(/\[\d+m/, '').gsub(/^(.*)\[\d+m/, '\1')
+    clean_line = line.gsub(/\[[\d+;?]+m/, '').gsub(/^(.*)\[\d+m/, '\1')
     unwanted = [/setlocale/, /\[K/]
     cleaned_output << clean_line unless unwanted.any? { |s| clean_line =~ s }
   end
