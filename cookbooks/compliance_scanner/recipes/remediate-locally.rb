@@ -4,16 +4,21 @@
 #
 # Copyright (c) 2016 The Authors, All Rights Reserved.
 
-default_recipe = '~/learn-chef/cookbooks/ssh/recipes/default.rb'
-kitchen_yml = '~/learn-chef/cookbooks/ssh/.kitchen.yml'
-sshd_config = '~/learn-chef/cookbooks/ssh/files/sshd_config'
+scenario_data = node['scenario']
+cookbook_name = scenario_data['cookbook_name']
+rule_name = scenario_data['rule_name']
+node_platform = scenario_data['node_platform']
+
+node1 = node["nodes"][node_platform]["node1"]
+
+default_recipe = "~/learn-chef/cookbooks/#{cookbook_name}/recipes/default.rb"
+kitchen_yml = "~/learn-chef/cookbooks/#{cookbook_name}/.kitchen.yml"
+sshd_config = "~/learn-chef/cookbooks/ssh/files/sshd_config"
 
 directory '~/learn-chef/cookbooks' do
   action :delete
   recursive true
 end
-
-node1 = node["nodes"]["rhel"]["node1"]
 
 with_snippet_options(lesson: 'remediate-the-compliance-failure-locally')
 
@@ -42,9 +47,9 @@ with_snippet_options(cwd: '~', step: 'login-to-compliance-scanner') do
 
 end
 
-# 3. Create the ssh cookbook
+# 3. Create the #{cookbook_name} cookbook
 
-with_snippet_options(cwd: '~/learn-chef', step: 'create-the-ssh-cookbook') do
+with_snippet_options(cwd: '~/learn-chef', step: "create-the-#{cookbook_name}-cookbook") do
 
   snippet_execute 'cd-learn-chef-1' do
     cwd '~'
@@ -57,26 +62,26 @@ with_snippet_options(cwd: '~/learn-chef', step: 'create-the-ssh-cookbook') do
   end
 
   snippet_execute 'chef-generate-cookbook' do
-    command 'chef generate cookbook cookbooks/ssh'
-    not_if 'stat ~/learn-chef/cookbooks/ssh'
+    command "chef generate cookbook cookbooks/#{cookbook_name}"
+    not_if "stat ~/learn-chef/cookbooks/#{cookbook_name}"
   end
 
 end
 
-# 4. Apply the ssh cookbook on a Test Kitchen instance
+# 4. Apply the #{cookbook_name} cookbook on a Test Kitchen instance
 
-with_snippet_options(cwd: '~/learn-chef/cookbooks/ssh', step: 'apply-the-ssh-cookbook') do
+with_snippet_options(cwd: "~/learn-chef/cookbooks/#{cookbook_name}", step: "apply-the-#{cookbook_name}-cookbook") do
 
   # .kitchen.yml
   snippet_code_block 'kitchen-1-yml' do
     file_path kitchen_yml
-    source_filename 'rhel/.kitchen.yml'
+    source_filename "#{node_platform}/.kitchen.yml"
   end
 
-  # cd ~/learn-chef/cookbooks/ssh
-  snippet_execute 'cd-learn-chef-cookbooks-ssh-1' do
+  # cd ~/learn-chef/cookbooks/#{cookbook_name}
+  snippet_execute "cd-learn-chef-cookbooks-#{cookbook_name}-1" do
     cwd '~/learn-chef'
-    command 'cd ~/learn-chef/cookbooks/ssh'
+    command "cd ~/learn-chef/cookbooks/#{cookbook_name}"
   end
 
   # kitchen list
@@ -87,13 +92,13 @@ with_snippet_options(cwd: '~/learn-chef/cookbooks/ssh', step: 'apply-the-ssh-coo
   # kitchen converge
   snippet_execute 'kitchen-converge-1' do
     command 'kitchen converge'
-    remove_lines_matching [/locale/, /#/, /Progress:/, /Estimated time remaining/]
+    remove_lines_matching [/locale/, /#/, /Progress:/, /Estimated time remaining/, /Reading database/]
   end
 end
 
 # 5. Replicate the failure on your Test Kitchen instance
 
-with_snippet_options(cwd: '~/learn-chef/cookbooks/ssh', step: 'apply-the-ssh-cookbook') do
+with_snippet_options(cwd: "~/learn-chef/cookbooks/#{cookbook_name}", step: "apply-the-#{cookbook_name}-cookbook") do
 
   # review .kitchen.yml
   snippet_code_block 'kitchen-2-yml' do
@@ -113,50 +118,52 @@ with_snippet_options(cwd: '~/learn-chef/cookbooks/ssh', step: 'apply-the-ssh-coo
     ignore_failure true
   end
 
-  # cat verify.txt | grep 'Set SSH Protocol to 2'
-  snippet_execute 'grep-ssh-protocol-1' do
-    command %q[cat verify.txt | grep 'Set SSH Protocol to 2']
+  # cat verify.txt | grep '#{rule_name}'
+  snippet_execute 'grep-rule-1' do
+    command "cat verify.txt | grep '#{rule_name}'"
   end
 end
 
 # 6. Remediate the failure
 
-with_snippet_options(cwd: '~/learn-chef/cookbooks/ssh', step: 'remediate-the-failure') do
+with_snippet_options(cwd: "~/learn-chef/cookbooks/#{cookbook_name}", step: 'remediate-the-failure') do
 
   # cd ~/learn-chef
   snippet_execute 'cd-learn-chef-2' do
-    cwd '~/learn-chef/cookbooks/ssh'
+    cwd "~/learn-chef/cookbooks/#{cookbook_name}"
     command 'cd ~/learn-chef'
   end
 
-  # chef generate file cookbooks/ssh ssh_config
-  snippet_execute 'chef-generate-file' do
-    cwd '~/learn-chef'
-    command 'chef generate file cookbooks/ssh ssh_config'
-  end
+  if node_platform == 'rhel'
+    # chef generate file cookbooks/ssh ssh_config
+    snippet_execute 'chef-generate-file' do
+      cwd '~/learn-chef'
+      command "chef generate file cookbooks/ssh ssh_config"
+    end
 
-  # sshd_config
-  snippet_code_block 'sshd_config' do
-    file_path sshd_config
-    source_filename 'rhel/sshd_config'
+    # sshd_config
+    snippet_code_block 'sshd_config' do
+      file_path sshd_config
+      source_filename 'rhel/sshd_config'
+    end
   end
 
   # default.rb
   snippet_code_block 'default-rb' do
     file_path default_recipe
-    source_filename 'rhel/default.rb'
+    source_filename "#{node_platform}/default.rb"
   end
 
-  # cd ~/learn-chef/cookbooks/ssh
-  snippet_execute 'cd-learn-chef-cookbooks-ssh-2' do
+  # cd ~/learn-chef/cookbooks/#{cookbook_name}
+  snippet_execute "cd-learn-chef-cookbooks-#{cookbook_name}-2" do
     cwd '~/learn-chef'
-    command 'cd ~/learn-chef/cookbooks/ssh'
+    command "cd ~/learn-chef/cookbooks/#{cookbook_name}"
   end
 
   # kitchen converge
   snippet_execute 'kitchen-converge-2' do
     command 'kitchen converge'
-    remove_lines_matching [/locale/, /#/, /Progress:/, /Estimated time remaining/]
+    remove_lines_matching [/locale/, /#/, /Progress:/, /Estimated time remaining/, /Reading database/]
   end
 
   # kitchen verify > verify.txt 2>&1
@@ -165,9 +172,9 @@ with_snippet_options(cwd: '~/learn-chef/cookbooks/ssh', step: 'remediate-the-fai
     ignore_failure true
   end
 
-  # cat verify.txt | grep 'Set SSH Protocol to 2'
-  snippet_execute 'grep-ssh-protocol-2' do
-    command %q[cat verify.txt | grep 'Set SSH Protocol to 2']
+  # cat verify.txt | grep '#{rule_name}'
+  snippet_execute 'grep-rule-2' do
+    command "cat verify.txt | grep '#{rule_name}'"
   end
 
   # kitchen login ...

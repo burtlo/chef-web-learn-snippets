@@ -75,8 +75,7 @@ sudo chef-compliance-ctl user-create #{compliance_username} #{compliance_passwor
 echo "Your Chef compliance scanner is ready!"
 EOF
 
-
-NODE_SCRIPT = <<EOF.freeze
+CENTOS_NODE_SCRIPT = <<EOF.freeze
 echo "Preparing node..."
 yum -y install ntp
 systemctl start ntpd
@@ -88,6 +87,30 @@ sudo sed -i -e 's/^Defaults.*requiretty/Defaults !requiretty/g' /etc/sudoers
 # PasswordAuthentication no
 sudo sed -i -e 's/^PasswordAuthentication.*yes/PasswordAuthentication no/g' /etc/ssh/sshd_config
 sudo service sshd restart
+
+echo "10.1.1.33 chef-server.test" | tee -a /etc/hosts
+echo "10.1.1.34 chef-compliance.test" | tee -a /etc/hosts
+
+if [ ! -d ~/.ssh ]; then
+  mkdir ~/.ssh
+fi
+sudo cp /tmp/node1 ~/.ssh/node1
+sudo cp /tmp/node1.pub ~/.ssh/node1.pub
+sudo chmod 600 ~/.ssh/node1
+sudo touch ~/.ssh/authorized_keys
+sudo cat ~/.ssh/node1.pub >> ~/.ssh/authorized_keys
+EOF
+
+UBUNTU_NODE_SCRIPT = <<EOF.freeze
+echo "Preparing node..."
+apt-get -y install ntp
+service ntp stop
+ntpdate -s time.nist.gov
+service ntp start
+
+# PasswordAuthentication no
+sudo sed -i -e 's/^PasswordAuthentication.*yes/PasswordAuthentication no/g' /etc/ssh/sshd_config
+sudo service ssh restart
 
 echo "10.1.1.33 chef-server.test" | tee -a /etc/hosts
 echo "10.1.1.34 chef-compliance.test" | tee -a /etc/hosts
@@ -134,13 +157,23 @@ Vagrant.configure(2) do |config|
     end
   end
 
-  config.vm.define 'node1' do |n|
+  config.vm.define 'node1-centos' do |n|
     n.vm.box = 'bento/centos-7.2'
-    n.vm.hostname = 'node1.test'
+    n.vm.hostname = 'node1-centos.test'
     n.vm.network 'private_network', ip: '10.1.1.35'
     n.vm.provision 'file', source: '../../shared/files/node1', destination: '/tmp/node1'
     n.vm.provision 'file', source: '../../shared/files/node1.pub', destination: '/tmp/node1.pub'
-    n.vm.provision :shell, inline: NODE_SCRIPT.dup
+    n.vm.provision :shell, inline: CENTOS_NODE_SCRIPT.dup
+    set_hostname(n)
+  end
+
+  config.vm.define 'node1-ubuntu' do |n|
+    n.vm.box = 'bento/ubuntu-14.04'
+    n.vm.hostname = 'node1-ubuntu.test'
+    n.vm.network 'private_network', ip: '10.1.1.37'
+    n.vm.provision 'file', source: '../../shared/files/node1', destination: '/tmp/node1'
+    n.vm.provision 'file', source: '../../shared/files/node1.pub', destination: '/tmp/node1.pub'
+    n.vm.provision :shell, inline: UBUNTU_NODE_SCRIPT.dup
     set_hostname(n)
   end
 

@@ -29,9 +29,9 @@ Vagrant.configure(2) do |config|
       v.vmx["vhv.enable"] = "TRUE"
     end
 
-    cs.vm.provision 'file', source: '../../shared/files/node1', destination: '/tmp/node1'
-    cs.vm.provision 'file', source: '../../shared/files/node1.pub', destination: '/tmp/node1.pub'
-    cs.vm.provision 'file', source: '../../compliance_network/virtualbox/secrets/admin.pem', destination: '/tmp/admin.pem'
+    cs.vm.provision 'file', source: '../../../shared/files/node1', destination: '/tmp/node1'
+    cs.vm.provision 'file', source: '../../../shared/files/node1.pub', destination: '/tmp/node1.pub'
+    cs.vm.provision 'file', source: '../../../compliance_network/virtualbox/secrets/admin.pem', destination: '/tmp/admin.pem'
     cs.vm.provision 'file', source: 'files/knife.rb', destination: '/tmp/knife.rb'
     cs.vm.provision 'shell', inline: 'chmod 600 /tmp/node1'
     cs.vm.provision 'shell', inline: 'echo "10.1.1.33 chef-server.test" | tee -a /etc/hosts'
@@ -56,7 +56,7 @@ Vagrant.configure(2) do |config|
             "chef_server" => {
               "ubuntu" => chef_server_version
             },
-            "chef_compliance" => {
+            "compliance" => {
               "ubuntu" => chef_compliance_version
             }
           }
@@ -68,15 +68,21 @@ Vagrant.configure(2) do |config|
           "password" => compliance_password,
           "refresh_token" => "1/S2R8Z3O7x9HRZiTRKubLUcUDityWwv7KTwY2tGaE7athhpS7DjhdIe7DUuoPnEUp6SLUKk1q4UptCMWkZL4Pkw==" # Need to get this manually
         },
+        "scenario" => {
+          "node_platform" => "ubuntu",
+          "cookbook_name" => "ufw",
+          "rule_name" => "Ensure Firewall is active",
+          "compliance_profile" => "cis-ubuntu14.04lts-level1"
+        },
         "nodes" => {
-          "rhel" => {
+          "ubuntu" => {
             "node1" => {
               "name" => "node1",
               "identity_file" => "~/.ssh/node1",
               "hostname" => "node1.test",
-              "ip_address" => "10.1.1.35",
-              "ssh_user" => "root"#,
-              #"run_list" => "recipe[learn_chef_httpd]"
+              "ip_address" => "10.1.1.37",
+              "ssh_user" => "root",
+              "run_list" => "recipe[ufw]"
             }
           }
         }

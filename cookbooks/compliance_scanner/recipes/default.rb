@@ -6,20 +6,17 @@
 
 load_compliance_data
 
+scenario_data = node['scenario']
+node_platform = scenario_data['node_platform']
+
 with_snippet_options(
   tutorial: 'compliance_scanner',
-  platform: 'rhel',
+  platform: node_platform,
   virtualization: node['snippets']['virtualization'],
   prompt_character: node['snippets']['prompt_character'],
   compliance_url: node['compliance']['hostname'],
   compliance_user: node['compliance']['username']
   ) do
-
-# Write config file.
-snippet_config 'compliance_scanner'
-
-# sudo chef-compliance-ctl user-create john-smith P4ssw0rd!
-# curl -X POST https://10.1.1.34/login -d "{\"userid\": \"john-smith\", \"password\": \"P4ssw0rd!\"}"
 
 # Generate refresh token.
 snippet_compliance_api 'generate refresh token' do
@@ -47,7 +44,7 @@ snippet_compliance_api 'add SSH key' do
 end
 
 # Add node.
-node1 = node["nodes"]["rhel"]["node1"]
+node1 = node["nodes"][node_platform]["node1"]
 
 snippet_compliance_api 'add node' do
   action :add_node
@@ -82,7 +79,7 @@ snippet_compliance_api 'scan node 1' do
     {
       "compliance" => [
         "owner" => "cis",
-        "profile" => "cis-centos7-level2",
+        "profile" => scenario_data['compliance_profile'],
       ],
       "environments" => [
         "id" => get_compliance_data('environments/default')['id'],
@@ -107,5 +104,14 @@ directory ::File.expand_path('~/learn-chef')
 
 include_recipe 'compliance_scanner::remediate-locally'
 include_recipe 'compliance_scanner::remediate-node'
+
+# Write config file.
+snippet_config 'compliance_scanner' do
+  variables lazy {
+    ({
+      chef_client_version: ::File.read('tmp/node1-chef-client-version').strip
+    })
+  }
+end
 
 end
