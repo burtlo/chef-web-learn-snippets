@@ -1,5 +1,102 @@
 require 'yaml'
 
+def getenvvar(path, key)
+  `cd #{path} && rake getenvvar\\[#{key}\\]`.strip
+end
+
+namespace :infra do
+  desc 'Create infrastructure'
+  task :create, :path do |_t, args|
+    sh "cd #{args[:path]} && rake create"
+  end
+  desc 'Provision infrastructure'
+  task :provision, :path do |_t, args|
+    sh "cd #{args[:path]} && rake provision"
+  end
+  desc 'Destroy infrastructure'
+  task :destroy, :path do |_t, args|
+    sh "cd infra/#{args[:path]} && rake destroy"
+  end
+  desc 'Fetch infrastructure variable'
+  task :getenvvar, :path, :key do |_t, args|
+    getenvvar(args[:path], args[:key])
+  end
+end
+
+namespace :cookbook2 do
+  desc 'Vendor cookbooks'
+  task :vendor, :cookbook, :to_path do |_t, args|
+    cookbook = args[:cookbook]
+    path = args[:to_path]
+    # Vendor cookbooks from:
+    # cookbooks/#{cookbook}
+    # to:
+    # #{to_path}/vendored-cookbooks
+    sh "rm -rf #{path}/vendored-cookbooks"
+    source_cookbook_path = "cookbooks/#{cookbook}"
+    sh "rm -rf #{source_cookbook_path}/Berksfile.lock"
+    sh "berks vendor -b #{source_cookbook_path}/Berksfile #{path}/vendored-cookbooks"
+  end
+end
+
+namespace :scenario2 do
+  def members(config)
+    members = []
+    config['network'].each do |server|
+      path = "infra/#{server['type']}/#{server['platform']}/#{server['runtime_environment']}"
+      members << {
+        name: getenvvar(path, 'name'),
+        ip_address: getenvvar(path, 'ip_address'),
+        hostname: getenvvar(path, 'hostname')
+      }
+    end
+    members
+  end
+
+  # Create each server in the network
+  def create_network(config)
+    config['network'].each do |server|
+      path = "infra/#{server['type']}/#{server['platform']}/#{server['runtime_environment']}"
+      puts "Creating #{server['name']}...".green
+      Rake::Task['infra:create'].invoke(path)
+    end
+  end
+
+  # Provision each server in the network
+  def provision_network(config, members)
+    config['network'].each do |server|
+      path = "infra/#{server['type']}/#{server['platform']}/#{server['runtime_environment']}"
+
+      puts "Provisioning #{server['name']}...".green
+
+      # Vendor cookbooks.
+      Rake::Task['cookbook2:vendor'].invoke(server['cookbook'], path)
+
+      # Add info about the network to the provision config.
+      h = server.dup
+      h['node_attributes']['network'] = members
+      # Drop off provision config.
+      File.write(File.join(path, 'provision.lock'), h.to_s)
+
+      # Provision.
+      Rake::Task['infra:provision'].invoke(path)
+    end
+  end
+
+  desc 'Bring up systems to run a scanario and apply Chef cookbooks'
+  task :create, :scenario do |_t, args|
+    config = YAML.load_file("scenarios/#{args[:scenario]}/config.yml")
+    create_network(config)
+  end
+
+  desc 'Bring up systems to run a scanario and apply Chef cookbooks'
+  task :provision, :scenario do |_t, args|
+    config = YAML.load_file("scenarios/#{args[:scenario]}/config.yml")
+    provision_network(config, members(config))
+  end
+
+end
+
 namespace :cookbook do
   desc 'Vendor cookbooks for a scanario'
   task :vendor, :scenario do |_t, args|

@@ -9,3 +9,5 @@ secrets
 .chef
 crash.log
 compliance_api_data
+envvars.lock
+provision.lock

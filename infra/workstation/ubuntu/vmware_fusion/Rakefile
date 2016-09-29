@@ -1,0 +1,14 @@
+task :create do |_t|
+  sh "vagrant up --no-provision"
+end
+task :provision do |_t|
+  sh "vagrant reload && vagrant provision"
+end
+task :destroy do |_t|
+  sh "vagrant destroy --force"
+end
+task :getenvvar, :key do |_t, args|
+  config = eval(File.read('envvars.lock'))
+  val = config[args[:key].to_sym]
+  puts val ? val : "undefined"
+end

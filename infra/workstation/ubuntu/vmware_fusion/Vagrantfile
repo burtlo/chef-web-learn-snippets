@@ -1,0 +1,70 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+chef_version = "stable-12.12.15" # Used to bootstrap things. Version doesn't really matter.
+ip_address = "172.31.54.99"
+hostname = "workstation-ubuntu"
+
+if File.exist?('provision.lock')
+  provision_data = eval(File.read('provision.lock'))
+else
+  provision_data = {}
+end
+
+def set_hostname(server)
+  server.vm.provision 'shell', inline: "hostname #{server.vm.hostname}"
+end
+
+PROVISION_SCRIPT = <<EOF.freeze
+sudo apt-get update
+sudo apt-get -y install ntp
+sudo service ntp stop
+sudo ntpdate -s time.nist.gov
+sudo service ntp start
+
+if [ ! -d ~/.ssh ]; then
+  mkdir ~/.ssh
+fi
+sudo cp /tmp/node1 ~/.ssh/node1
+sudo cp /tmp/node1.pub ~/.ssh/node1.pub
+sudo chmod 600 ~/.ssh/node1
+sudo touch ~/.ssh/authorized_keys
+sudo cat ~/.ssh/node1.pub >> ~/.ssh/authorized_keys
+EOF
+
+Vagrant.configure(2) do |config|
+
+  config.vm.box = "bento/ubuntu-14.04"
+
+  config.vm.define "workstation-ubuntu" do |cs|
+
+    cs.vm.hostname = hostname
+    cs.vm.network "private_network", ip: ip_address
+    cs.vm.provider "vmware_fusion" do |v|
+      v.memory = 1024
+    end
+    set_hostname(cs)
+
+    cs.vm.provision 'file', source: '../../../keys/node1', destination: '/tmp/node1'
+    cs.vm.provision 'file', source: '../../../keys/node1.pub', destination: '/tmp/node1.pub'
+    cs.vm.provision :shell, inline: PROVISION_SCRIPT.dup
+
+    cs.vm.provision "chef_solo" do |chef|
+      chef.product = "chef"
+      chef.channel = chef_version.split('-')[0]
+      chef.version = chef_version.split('-')[1]
+      chef.log_level = "warn"
+      chef.cookbooks_path = "vendored-cookbooks"
+      chef.json = provision_data['node_attributes'] || {}
+    end
+  end
+end
+
+h = {
+  name: provision_data['name'],
+  ip_address: ip_address,
+  hostname: hostname,
+  username: "root",
+  ssh_key: File.expand_path('../../../keys/node1')
+}
+File.write('envvars.lock', h.to_s)

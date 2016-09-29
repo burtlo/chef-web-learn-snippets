@@ -1,0 +1,33 @@
+---
+network:
+  - name: linux_workstation
+    type: workstation
+    platform: ubuntu
+    runtime_environment: vmware_fusion
+    cookbook: manage_a_node
+    node_attributes:
+      run_list:
+        - recipe[manage_a_node::default]
+      products:
+        versions:
+          chefdk:
+            ubuntu: stable-0.18.26
+      snippets:
+        virtualization: hosted
+      nodes:
+        rhel:
+          node1:
+            name: node1-centos,
+            identity_file: ~/.ssh/private_key,
+            ip_address: 192.168.145.134,
+            ssh_user: vagrant,
+            run_list: recipe[learn_chef_httpd]
+  # - name: chef_server:
+  #   type: chef_server
+  #   platform: ubuntu
+  #   runtime_environment: vmware_fusion
+  #   node_attributes:
+  #     products:
+  #       versions:
+  #         chef_server:
+  #           ubuntu: stable-12.9.1
