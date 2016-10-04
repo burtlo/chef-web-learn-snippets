@@ -2,81 +2,41 @@
 # vi: set ft=ruby :
 chef_version = "stable-12.12.15"
 
-aws_region = "us-east-1"
-aws_ami_id = "ami-6d1c2007"
-aws_instance_type = "t2.micro"
-
 Vagrant.configure(2) do |config|
 
   config.vm.box = "bento/ubuntu-14.04"
 
-  # cache rules everything around me
-  if Vagrant.has_plugin?("vagrant-cachier")
-    config.cache.scope = :box
-    config.cache.auto_detect = true
-  end
-
-  # config.vm.provider :aws do |aws, override|
-  #   override.vm.box = "vagrant-aws-dummy"
-  #
-  #   aws.access_key_id = ENV['AWS_ACCESS_KEY_ID']
-  #   aws.secret_access_key = ENV['AWS_SECRET_ACCESS_KEY']
-  #   aws.keypair_name = ENV['AWS_KEYPAIR_NAME']
-  #   aws.region = aws_region
-  #   aws.ami = aws_ami_id
-  #   aws.instance_type = aws_instance_type
-  #   aws.security_groups = ["Web server - Linux"]
-  #   # https://github.com/mitchellh/vagrant/issues/1482
-  #   aws.user_data = "#!/bin/bash\nsed -i -e 's/^Defaults.*requiretty/# Defaults requiretty/g' /etc/sudoers" # https://github.com/mitchellh/vagrant-aws/issues/340
-  #
-  #   override.ssh.username = "centos"
-  #   override.ssh.private_key_path = ENV['AWS_PRIVATE_KEY_PATH']
-  #   override.nfs.functional = false # https://github.com/mitchellh/vagrant/issues/5401
-  #
-  #   puts `aws ec2 describe-instances`
-  # end
-
-  # Bootstrap using key-based authentication
-  config.vm.define "node1-centos-7.2" do |cs|
+  config.vm.define "node1-centos" do |cs|
     cs.vm.box = "bento/centos-7.2"
-    cs.vm.hostname = "node1"
-    cs.vm.network "private_network", ip: "192.168.145.134"
-
-    cs.vm.provider "vmware_fusion" do |v|
-      v.memory = 512
-    end
+    cs.vm.hostname = "node1-centos"
+    #cs.vm.network "private_network", ip: "192.168.145.134"
+    cs.vm.provision "shell", path: "../../shared/scripts/report_ip_address.sh"
   end
-  #
-  # # Bootstrap a using a forwarded port
-  # config.vm.define "node2-centos-7.2" do |cs|
-  #   cs.vm.box = "bento/centos-7.2"
-  #   cs.vm.hostname = "node1"
-  #   cs.vm.network "private_network", ip: "192.168.145.134"
-  #
-  #   cs.vm.network "forwarded_port", guest: 22, host: 2400, id: "ssh"
-  #
-  #   cs.vm.provider "vmware_fusion" do |v|
-  #     v.memory = 256
-  #   end
-  # end
-  #
-  # # Bootstrap using a username and password
-  # config.vm.define "node3-centos-7.2" do |cs|
-  #   cs.vm.box = "bento/centos-7.2"
-  #   cs.vm.hostname = "node1"
-  #   cs.vm.network "private_network", ip: "192.168.145.135"
-  #
-  #   config.ssh.username = 'vagrant'
-  #   config.ssh.password = 'vagrant'
-  #   config.ssh.insert_key = 'true'
-  #
-  #   cs.vm.provider "vmware_fusion" do |v|
-  #     v.memory = 256
-  #   end
-  # end
-  #
-  config.vm.define "workstation-ubuntu-14.04" do |cs|
-    cs.vm.hostname = "workstation-ubuntu-1404"
+
+  config.vm.define "node1-ubuntu" do |cs|
+    cs.vm.box = "boxcutter/ubuntu1404" #"bento/ubuntu-14.04"
+    cs.vm.hostname = "node1-ubuntu"
+    #cs.vm.network "private_network", ip: "192.168.145.135"
+    cs.vm.provision "shell", path: "../../shared/scripts/report_ip_address.sh"
+  end
+
+  config.vm.define "node1-windows" do |cs|
+    cs.vm.box = "opentable/win-2012r2-standard-amd64-nocm"
+    cs.vm.guest = :windows
+    cs.vm.hostname = "node1-windows"
+    #cs.vm.network "private_network", ip: "192.168.145.136"
+    cs.winrm.username = "Administrator"
+    cs.vm.provider "vmware_fusion" do |v|
+      v.memory = 1024
+      v.cpus = 1
+      v.gui = false
+    end
+    cs.vm.provision "shell", path: "../../shared/scripts/ReportIPAddress.ps1"
+  end
+
+  config.vm.define "workstation-ubuntu" do |cs|
+    cs.vm.box = "boxcutter/ubuntu1404" #"bento/ubuntu-14.04"
+    cs.vm.hostname = "workstation-ubuntu"
     cs.vm.network "private_network", ip: "192.168.145.132"
 
     cs.vm.provider "vmware_fusion" do |v|
@@ -94,33 +54,32 @@ Vagrant.configure(2) do |config|
         "snippets" => {
           "virtualization" => "hosted"
         },
-        "nodes" => {
-          "rhel" => {
-            "node1" => {
-              "name" => "node1-centos-7.2",
-              "identity_file" => "~/.ssh/private_key",
-              "ip_address" => "192.168.145.134",
-              "ssh_user" => "vagrant",
-              "run_list" => "recipe[learn_chef_httpd]"
-            },
-            "node2" => {
-              "name" => "node2-centos-7.2",
-              "identity_file" => "~/.ssh/private_key",
-              "ip_address" => "192.168.145.134",
-              "ssh_user" => "vagrant",
-              "ssh_port" => 2201,
-              "run_list" => "recipe[learn_chef_httpd]"
-            },
-            "node3" => {
-              "name" => "node3-centos-7.2",
-              "password" => "vagrant",
-              "ip_address" => "192.168.145.135",
-              "ssh_user" => "root",
-              "ssh_port" => 2400,
-              "run_list" => "recipe[learn_chef_httpd]"
-            }
+        "nodes" => [
+          {
+            "name" => "node1-centos",
+            "platform" => "rhel",
+            "ssh_user" => "vagrant",
+            "identity_file" => "~/.ssh/private_key",
+            "ip_address" => "192.168.145.134",
+            "cookbook" => "learn_chef_httpd"
+          },
+          {
+            "name" => "node1-ubuntu",
+            "platform" => "ubuntu",
+            "ssh_user" => "vagrant",
+            "identity_file" => "~/.ssh/private_key",
+            "ip_address" => "192.168.145.135",
+            "cookbook" => "learn_chef_apache2"
+          },
+          {
+            "name" => "node1-windows",
+            "platform" => "windows",
+            "winrm_user" => "vagrant",
+            "password" => "vagrant",
+            "ip_address" => "undefined",
+            "cookbook" => "learn_chef_iis"
           }
-        }
+        ]
       }
     end
   end

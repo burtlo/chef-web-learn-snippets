@@ -5,13 +5,13 @@ This tutorial was last tested using this configuration:
   * **AMI ID:** <%= node['cloud']['aws']['chef_server']['ami_id'] %>
   * **Instance type:** <%= node['cloud']['aws']['chef_server']['instance_type'] %>
 <br /><br />
-* A CentOS 7 node on Amazon Web Services
+* A node running <%= @node_display_name %> on Amazon Web Services
   * **Region:** <%= node['cloud']['aws']['region'] %>
-  * **AMI ID:** <%= node['cloud']['aws']['node']['ami_id'] %>
-  * **Instance type:** <%= node['cloud']['aws']['node']['instance_type'] %>
+  * **AMI ID:** <%= node['cloud']['aws']['nodes'][@node_platform]['ami_id'] %>
+  * **Instance type:** <%= node['cloud']['aws']['nodes'][@node_platform]['instance_type'] %>
   * **Software:** Chef client <%= @chef_client_version %>
 <br /><br />
-* An Ubuntu 14.04 workstation on Amazon Web Services
+* A workstation running Ubuntu 14.04 on Amazon Web Services
   * **Region:** <%= node['cloud']['aws']['region'] %>
   * **AMI ID:** <%= node['cloud']['aws']['workstation']['ami_id'] %>
   * **Instance type:** <%= node['cloud']['aws']['workstation']['instance_type'] %>

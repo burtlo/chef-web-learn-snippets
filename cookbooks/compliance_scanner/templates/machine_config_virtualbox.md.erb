@@ -1,10 +1,10 @@
 This tutorial was last tested with this configuration:
 
-* An Ubuntu 14.04 workstation on VMWare Fusion.
+* An Ubuntu 14.04 workstation on VMware Fusion.
   * **Software:** Vagrant <%= node['products']['versions']['vagrant']['ubuntu'] %>, VirtualBox <%= node['products']['versions']['virtualbox']['ubuntu'] %>
 
-* Chef compliance scanner <%= node['products']['versions']['compliance']['ubuntu'].split('-')[1] %> on Ubuntu 14.04 running on VMWare Fusion.
+* Chef compliance scanner <%= node['products']['versions']['compliance']['ubuntu'].split('-')[1] %> on Ubuntu 14.04 running on VMware Fusion.
 
-* Chef server <%= node['products']['versions']['chef_server']['ubuntu'].split('-')[1] %> on Ubuntu 14.04 running on VMWare Fusion.
+* Chef server <%= node['products']['versions']['chef_server']['ubuntu'].split('-')[1] %> on Ubuntu 14.04 running on VMware Fusion.
 
-* A <%= node['node_platform'] == 'rhel' ? "Centos 7.2" : "Ubuntu 14.04" %> node on VMWare Fusion, Chef client <%= @chef_client_version %>.
+* A <%= node['node_platform'] == 'rhel' ? "Centos 7.2" : "Ubuntu 14.04" %> node on VMware Fusion, Chef client <%= @chef_client_version %>.

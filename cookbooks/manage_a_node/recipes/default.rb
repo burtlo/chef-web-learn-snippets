@@ -10,20 +10,33 @@ with_snippet_options(
   prompt_character: node['snippets']['prompt_character']
   ) do
 
-include_recipe 'manage_a_node::workstation'
-include_recipe 'manage_a_node::chef-server'
-include_recipe 'manage_a_node::upload-cookbook'
-include_recipe 'manage_a_node::bootstrap-node'
-include_recipe 'manage_a_node::update-node-config'
-include_recipe 'manage_a_node::resolve-failure'
+  include_recipe 'manage_a_node::workstation'
+  include_recipe 'manage_a_node::chef-server'
+  include_recipe 'manage_a_node::upload-cookbook'
+  include_recipe 'manage_a_node::bootstrap-update-resolve'
 
-# Write config file.
-snippet_config 'manage-a-node' do
-  variables lazy {
-    ({
-      chef_client_version: ::File.read('tmp/node1-chef-client-version').strip
-    })
-  }
-end
-
+  # Write config files.
+  node['nodes'].each do |n|
+    platform = n['platform']
+    platform_display_name = case platform
+    when 'rhel'
+      'CentOS 7.2'
+    when 'ubuntu'
+      'Ubuntu 14.04'
+    when 'windows'
+      "Windows Server 2012 R2"
+    end
+    name = n['name']
+    snippet_config "manage-a-node-#{platform}" do
+      tutorial 'manage-a-node'
+      platform platform
+      variables lazy {
+        ({
+          node_platform: platform,
+          chef_client_version: ::File.read("tmp/#{name}-chef-client-version").strip,
+          node_display_name: platform_display_name
+        })
+      }
+    end
+  end
 end
