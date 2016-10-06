@@ -26,21 +26,43 @@ variable "availability_zone" {
   default = "b"
 }
 
+variable "windows_password" {
+  default = "7pXySo%!Cz"
+}
+
 variable "chef_server" {
   type = "map"
   default = {
-    ami = "ami-94f51df9"
+    ami = "ami-cc5a23db" # 12.8.0-2
     instance_type = "t2.large"
     name_tag = "chef-server-marketplace"
   }
 }
 
-variable "node1" {
+variable "node1_centos" {
   type = "map"
   default = {
     ami = "ami-6d1c2007" # CentOS 7
     instance_type = "t2.micro"
     name_tag = "node1-centos"
+  }
+}
+
+variable "node1_ubuntu" {
+  type = "map"
+  default = {
+    ami = "ami-2d39803a" # Ubuntu 14.04
+    instance_type = "t2.micro"
+    name_tag = "node1-ubuntu"
+  }
+}
+
+variable "node1_windows" {
+  type = "map"
+  default = {
+    ami = "ami-ee7805f9" # Windows Server 2012 R2
+    instance_type = "t2.medium"
+    name_tag = "node1-windows"
   }
 }
 
@@ -89,7 +111,7 @@ resource "aws_security_group" "chef_server" {
   }
 }
 
-resource "aws_security_group" "node1" {
+resource "aws_security_group" "linux_webserver" {
   name = "node1"
   description = "Rules for a basic Linux web server"
 
@@ -117,6 +139,50 @@ resource "aws_security_group" "node1" {
       cidr_blocks = ["0.0.0.0/0"]
   }
 
+  egress {
+    from_port = 0
+    to_port = 0
+    protocol = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_security_group" "windows_webserver" {
+  name = "Learn Chef - web server - Windows"
+
+  # WinRM
+  ingress {
+    from_port = 5985
+    to_port = 5985
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # HTTP
+  ingress {
+    from_port = 80
+    to_port = 80
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # HTTPS
+  ingress {
+    from_port = 443
+    to_port = 443
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # RDP
+  ingress {
+    from_port = 3389
+    to_port = 3389
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # outbound internet access
   egress {
     from_port = 0
     to_port = 0
@@ -166,24 +232,68 @@ resource "aws_instance" "chef_server" {
   provisioner "remote-exec" {
     inline = [
       "mkdir ~/drop",
-      "ls /idontexist",
-      "while [ $? -ne 0 ]; do sleep 1m && sudo chef-server-ctl user-create admin Bob Admin admin@4thcoffee.com insecurepassword --filename ~/drop/admin.pem; done",
+      "until sudo chef-server-ctl user-create admin Bob Admin admin@4thcoffee.com insecurepassword --filename ~/drop/admin.pem; do sleep 1m; done",
       "sudo chef-server-ctl org-create 4thcoffee \"Fourth Coffee, Inc.\" --association_user admin --filename 4thcoffee-validator.pem",
     ]
   }
 }
 
-# node
-resource "aws_instance" "node1" {
-  ami = "${lookup(var.node1, "ami")}"
+# CentOS node
+resource "aws_instance" "node1_centos" {
+  ami = "${lookup(var.node1_centos, "ami")}"
   availability_zone = "${var.region}${var.availability_zone}"
-  instance_type = "${lookup(var.node1, "instance_type")}"
-  security_groups = ["${aws_security_group.node1.name}"]
+  instance_type = "${lookup(var.node1_centos, "instance_type")}"
+  security_groups = ["${aws_security_group.linux_webserver.name}"]
   associate_public_ip_address = true
   tags {
-    Name = "${lookup(var.node1, "name_tag")}"
+    Name = "${lookup(var.node1_centos, "name_tag")}"
   }
   key_name = "${var.key_name}"
+}
+
+# Ubuntu node
+resource "aws_instance" "node1_ubuntu" {
+  ami = "${lookup(var.node1_ubuntu, "ami")}"
+  availability_zone = "${var.region}${var.availability_zone}"
+  instance_type = "${lookup(var.node1_ubuntu, "instance_type")}"
+  security_groups = ["${aws_security_group.linux_webserver.name}"]
+  associate_public_ip_address = true
+  tags {
+    Name = "${lookup(var.node1_ubuntu, "name_tag")}"
+  }
+  key_name = "${var.key_name}"
+}
+
+# Windows node
+resource "aws_instance" "node1_windows" {
+  ami = "${lookup(var.node1_windows, "ami")}"
+  availability_zone = "${var.region}${var.availability_zone}"
+  instance_type = "${lookup(var.node1_windows, "instance_type")}"
+  security_groups = ["${aws_security_group.windows_webserver.name}"]
+  associate_public_ip_address = true
+  tags {
+    Name = "${lookup(var.node1_windows, "name_tag")}"
+  }
+  key_name = "${var.key_name}"
+  lifecycle {
+    ignore_changes = [
+      "ebs_block_device"
+    ]
+  }
+
+  user_data = <<EOF
+<powershell>
+  # turn off PowerShell execution policy restrictions
+  # Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope LocalMachine
+
+  Get-NetFirewallPortFilter | ?{$_.LocalPort -eq 5985 } | Get-NetFirewallRule | ?{ $_.Direction -eq "Inbound" -and $_.Profile -eq "Public" -and $_.Action -eq "Allow"} | Set-NetFirewallRule -RemoteAddress "Any"
+
+  $admin = [adsi]("WinNT://./administrator, user")
+  $admin.psbase.invoke("SetPassword", "${var.windows_password}")
+
+  New-Item -ItemType directory -Path C:\Temp
+</powershell>
+EOF
 }
 
 # workstation
@@ -241,17 +351,32 @@ resource "aws_instance" "workstation" {
       "fqdn": "${aws_instance.chef_server.public_dns}",
       "org": "4thcoffee"
     },
-    "nodes": {
-      "rhel": {
-        "node1": {
-          "name": "node1",
-          "identity_file": "~/.ssh/private_key",
-          "ip_address": "${aws_instance.node1.public_ip}",
-          "ssh_user": "centos",
-          "run_list": "recipe[learn_chef_httpd]"
-        }
+    "nodes": [
+      {
+        "name": "node1-centos",
+        "platform": "rhel",
+        "ssh_user": "centos",
+        "identity_file": "~/.ssh/private_key",
+        "ip_address": "${aws_instance.node1_centos.public_ip}",
+        "cookbook": "learn_chef_httpd"
+      },
+      {
+        "name": "node1-ubuntu",
+        "platform": "ubuntu",
+        "ssh_user": "ubuntu",
+        "identity_file": "~/.ssh/private_key",
+        "ip_address": "${aws_instance.node1_ubuntu.public_ip}",
+        "cookbook": "learn_chef_apache2"
+      },
+      {
+        "name": "node1-windows",
+        "platform": "windows",
+        "winrm_user": "Administrator",
+        "password": "${var.windows_password}",
+        "ip_address": "${aws_instance.node1_windows.public_ip}",
+        "cookbook": "learn_chef_iis"
       }
-    },
+    ],
     "cloud": {
       "aws": {
         "region": "${var.region}",
@@ -263,9 +388,19 @@ resource "aws_instance" "workstation" {
           "ami_id": "${lookup(var.workstation, "ami")}",
           "instance_type": "${lookup(var.workstation, "instance_type")}"
         },
-        "node": {
-          "ami_id": "${lookup(var.node1, "ami")}",
-          "instance_type": "${lookup(var.node1, "instance_type")}"
+        "nodes": {
+          "rhel": {
+            "ami_id": "${lookup(var.node1_centos, "ami")}",
+            "instance_type": "${lookup(var.node1_centos, "instance_type")}"
+          },
+          "ubuntu": {
+            "ami_id": "${lookup(var.node1_ubuntu, "ami")}",
+            "instance_type": "${lookup(var.node1_ubuntu, "instance_type")}"
+          },
+          "windows": {
+            "ami_id": "${lookup(var.node1_windows, "ami")}",
+            "instance_type": "${lookup(var.node1_windows, "instance_type")}"
+          }
         }
       }
     }

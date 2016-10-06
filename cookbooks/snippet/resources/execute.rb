@@ -18,6 +18,8 @@ property :trim_stderr, [ Array, Hash, nil ], default: nil
 property :excerpt_stdout, [ Array, Hash, nil ], default: nil
 property :prompt_character, [ String, nil ], default: nil
 property :left_justify, [ TrueClass, FalseClass ], default: false
+property :write_stdout, [ TrueClass, FalseClass ], default: true
+property :write_stderr, [ TrueClass, FalseClass ], default: true
 
 def initialize(*args)
   super
@@ -47,6 +49,7 @@ action :run do
 
   # Run the command.
   options = {}
+  options[:timeout] = 7200
   options[:cwd] = ::File.expand_path(cwd)
   env = node['workstation']['environment'][node['platform']]
   options[:environment] = { "PATH" => env } if env
@@ -110,13 +113,17 @@ action :run do
   end
 
   # Write stdout.
-  file ::File.join(snippet_full_path, 'stdout') do
-    content stdout
+  if write_stdout
+    file ::File.join(snippet_full_path, 'stdout') do
+      content stdout
+    end
   end
 
-  # Write stderr.
-  file ::File.join(snippet_full_path, 'stderr') do
-    content stderr
+  if write_stderr
+    # Write stderr.
+    file ::File.join(snippet_full_path, 'stderr') do
+      content stderr
+    end
   end
 end
 

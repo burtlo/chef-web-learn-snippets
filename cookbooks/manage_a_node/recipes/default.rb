@@ -10,20 +10,7 @@ with_snippet_options(
   prompt_character: node['snippets']['prompt_character']
   ) do
 
-include_recipe 'manage_a_node::workstation'
-include_recipe 'manage_a_node::chef-server'
-include_recipe 'manage_a_node::upload-cookbook'
-include_recipe 'manage_a_node::bootstrap-node'
-include_recipe 'manage_a_node::update-node-config'
-include_recipe 'manage_a_node::resolve-failure'
-
-# Write config file.
-snippet_config 'manage-a-node' do
-  variables lazy {
-    ({
-      chef_client_version: ::File.read('tmp/node1-chef-client-version').strip
-    })
-  }
-end
-
+  include_recipe 'manage_a_node::workstation'
+  include_recipe 'manage_a_node::chef-server'
+  include_recipe 'manage_a_node::upload-bootstrap-update-resolve'
 end

@@ -2,6 +2,6 @@ This tutorial was last tested using this configuration:
 
 * Hosted Chef server
 
-* A workstation running Ubuntu 14.04 on VMWare Fusion, Chef Development Kit <%= node['products']['versions']['chefdk']['ubuntu'].split('-')[1] %>
+* A workstation running Ubuntu 14.04 on VMware Fusion, Chef Development Kit <%= node['products']['versions']['chefdk']['ubuntu'].split('-')[1] %>
 
-* A CentOS 7.2 node on VMWare Fusion, Chef client <%= @chef_client_version %>
+* A node running <%= @node_display_name %> on VMware Fusion, Chef client <%= @chef_client_version %>
