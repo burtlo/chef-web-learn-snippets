@@ -63,7 +63,7 @@ action :run do
 
   # Clean the output.
   clean_stdout = clean_output(result.stdout.dup)
-
+  clean_stderr = clean_output(result.stderr.dup)
   # Write metadata.
   directory ::File.dirname(snippet_metadata_filename) do
     recursive true
@@ -104,7 +104,7 @@ action :run do
   # Transform output streams.
   stdout = trim_output(clean_stdout, trim_stdout)
   stdout = remove_lines(stdout, [remove_lines_matching].flatten) if remove_lines_matching
-  stderr = trim_output(result.stderr, trim_stderr)
+  stderr = trim_output(clean_stderr, trim_stderr)
   stdout = excerpt_output(stdout, excerpt_stdout) if excerpt_stdout
 
   if left_justify

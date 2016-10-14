@@ -57,6 +57,7 @@ node['nodes'].each do |n|
 
         ntp_commands = {
           'ubuntu' => <<-EOH_UBUNTU.strip,
+apt-get update
 apt-get -y install ntp
 service ntp stop
 ntpdate -s time.nist.gov

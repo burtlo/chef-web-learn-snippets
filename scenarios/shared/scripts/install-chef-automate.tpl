@@ -1,23 +1,35 @@
 #!/bin/bash
-#sudo apt-get update
 
-echo $(curl -s http://169.254.169.254/latest/meta-data/public-hostname) | xargs sudo hostname
+apt-get update
+apt-get -y install curl
 
-if [ ! -d ~/drop ]
-  then
-    mkdir ~/drop
-fi
-if [ ! -d ~/downloads ]
-  then
-    mkdir ~/downloads
-fi
+# Ensure the time is up to date
+apt-get -y install ntp
+service ntp stop
+ntpdate -s time.nist.gov
+service ntp start
 
-# Install Chef server
+# Install Chef Automate
 if [ ! $(which delivery-ctl) ]
   then
+    # Download the package
+    if [ ! -d ~/downloads ]
+      then
+        mkdir ~/downloads
+    fi
     wget -P ~/downloads https://packages.chef.io/${delivery_channel}/ubuntu/14.04/delivery_${delivery_version}-1_amd64.deb
-    sudo dpkg -i ~/downloads/delivery_${delivery_version}-1_amd64.deb
-    sudo delivery-ctl setup --license /tmp/automate.license --key /tmp/delivery.pem --server-url https://${chef_server_fqdn}/organizations/${chef_automate_org} --fqdn ${chef_automate_fqdn} --enterprise caffeine --configure --no-build-node
-    sudo delivery-ctl create-user caffeine delivery --password insecurepassword --roles "admin" 
-    # sudo delivery-ctl create-enterprise mammalia --ssh-pub-key-file=/etc/delivery/builder_key.pub
+
+    # Install the package
+    dpkg -i ~/downloads/delivery_${delivery_version}-1_amd64.deb
+
+    # Run setup
+    delivery-ctl setup --license /tmp/automate.license --key /tmp/delivery.pem --server-url https://$chef_server_fqdn/organizations/cohovineyard --fqdn $(hostname) --enterprise chordata --configure --no-build-node
+    delivery-ctl reconfigure
+
+    # Wait for all services to come online
+    until (curl --insecure -D - https://localhost/api/_status) | grep "200 OK"; do sleep 5m && delivery-ctl restart; done
+    while (curl --insecure https://localhost/api/_status) | grep "fail"; do sleep 15s; done
+
+    # Create an initial user
+    delivery-ctl create-user chordata delivery --password P4ssw0rd! --roles "admin"
 fi

@@ -115,6 +115,8 @@ def map_language(file_path)
   case file_ext
   when '.rb'
     'ruby'
+  when '.sh'
+    'shell'
   when '.yml'
     'yaml'
   when '.htm', '.html'
