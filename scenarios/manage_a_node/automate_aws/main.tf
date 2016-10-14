@@ -16,7 +16,7 @@ variable "chef_server_channel" {
 }
 
 variable "chef_server_version" {
-  default = "12.8.0"
+  default = "12.9.1"
 }
 
 variable push_jobs_channel {
@@ -32,7 +32,7 @@ variable delivery_channel {
 }
 
 variable delivery_version {
-  default = "0.5.204"
+  default = "0.5.370"
 }
 
 # Configure the AWS Provider
@@ -68,12 +68,34 @@ variable "chef_server" {
   }
 }
 
-variable "node1" {
+variable "node1-centos" {
   type = "map"
   default = {
     ami = "ami-6d1c2007" # CentOS 7
     instance_type = "t2.micro"
     name_tag = "node1-centos"
+  }
+}
+
+variable "windows_password" {
+  default = "7pXySo%!Cz"
+}
+
+variable "node1-windows" {
+  type = "map"
+  default = {
+    ami = "ami-ee7805f9" # Windows Server 2012 R2
+    instance_type = "t2.medium"
+    name_tag = "node1-windows"
+  }
+}
+
+variable "node1-ubuntu" {
+  type = "map"
+  default = {
+    ami = "ami-2d39803a" # Ubuntu 14.04
+    instance_type = "t2.micro"
+    name_tag = "node1-ubuntu"
   }
 }
 
@@ -130,6 +152,51 @@ resource "aws_security_group" "chef_server" {
   }
 }
 
+resource "aws_security_group" "windows_webserver" {
+  name = "Learn Chef - web server - Windows"
+
+  # WinRM
+  ingress {
+    from_port = 5985
+    to_port = 5985
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # HTTP
+  ingress {
+    from_port = 80
+    to_port = 80
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # HTTPS
+  ingress {
+    from_port = 443
+    to_port = 443
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # RDP
+  ingress {
+    from_port = 3389
+    to_port = 3389
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # outbound internet access
+  egress {
+    from_port = 0
+    to_port = 0
+    protocol = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+
 resource "aws_security_group" "chef_automate" {
   name = "chef_automate"
   description = "Rules for Chef Automate"
@@ -174,8 +241,8 @@ resource "aws_security_group" "chef_automate" {
   }
 }
 
-resource "aws_security_group" "node1" {
-  name = "node1"
+resource "aws_security_group" "linux_sg" {
+  name = "linux_sg"
   description = "Rules for a basic Linux web server"
 
   # SSH
@@ -231,28 +298,28 @@ resource "aws_security_group" "workstation" {
 }
 
 # Template for initial configuration bash script
-data "template_file" "install-chef-server" {
-    template = "${file("../../shared/scripts/install-chef-server.tpl")}"
-    vars {
-      server_channel = "${var.chef_server_channel}"
-      server_version = "${var.chef_server_version}"
-      server_fqdn = "${aws_instance.chef_automate.public_dns}"
-      push_jobs_channel = "${var.push_jobs_channel}"
-      push_jobs_version = "${var.push_jobs_version}"
-    }
-}
+#data "template_file" "install-chef-server" {
+#    template = "${file("../../shared/scripts/install-chef-server.tpl")}"
+#    vars {
+#      server_channel = "${var.chef_server_channel}"
+#      server_version = "${var.chef_server_version}"
+#      server_fqdn = "${aws_instance.chef_automate.public_dns}"
+#      push_jobs_channel = "${var.push_jobs_channel}"
+#      push_jobs_version = "${var.push_jobs_version}"
+#    }
+#}
 
 # Template for initial configuration bash script
-data "template_file" "install-chef-automate" {
-    template = "${file("../../shared/scripts/install-chef-automate.tpl")}"
-    vars {
-      delivery_channel = "${var.delivery_channel}"
-      delivery_version = "${var.delivery_version}"
-      chef_server_fqdn = "${aws_instance.chef_server.public_dns}"
-      chef_automate_fqdn = "${aws_instance.chef_automate.public_dns}"
-      chef_automate_org = "4thcoffee"
-    }
-}
+#data "template_file" "install-chef-automate" {
+#    template = "${file("../../shared/scripts/install-chef-automate.tpl")}"
+#    vars {
+#      delivery_channel = "${var.delivery_channel}"
+#      delivery_version = "${var.delivery_version}"
+#      chef_server_fqdn = "${aws_instance.chef_server.public_dns}"
+#      chef_automate_fqdn = "${aws_instance.chef_automate.public_dns}"
+#      chef_automate_org = "4thcoffee"
+#    }
+#}
 
 # Template for initial configuration bash script
 data "template_file" "data_collector" {
@@ -273,6 +340,10 @@ resource "aws_instance" "chef_server" {
     Name = "${lookup(var.chef_server, "name_tag")}"
   }
   key_name = "${var.key_name}"
+  user_data = <<EOF
+#!/bin/bash
+echo $(curl -s http://169.254.169.254/latest/meta-data/public-hostname) | xargs sudo hostname
+EOF
 }
 
 # Chef Automate
@@ -286,22 +357,27 @@ resource "aws_instance" "chef_automate" {
     Name = "${lookup(var.chef_automate, "name_tag")}"
   }
   key_name = "${var.key_name}"
+  user_data = <<EOF
+#!/bin/bash
+echo $(curl -s http://169.254.169.254/latest/meta-data/public-hostname) | xargs sudo hostname
+EOF
+
 }
 
-# node
-resource "aws_instance" "node1" {
-  ami = "${lookup(var.node1, "ami")}"
+# node1-centos
+resource "aws_instance" "node1-centos" {
+  ami = "${lookup(var.node1-centos, "ami")}"
   availability_zone = "${var.region}${var.availability_zone}"
-  instance_type = "${lookup(var.node1, "instance_type")}"
-  security_groups = ["${aws_security_group.node1.name}"]
+  instance_type = "${lookup(var.node1-centos, "instance_type")}"
+  security_groups = ["${aws_security_group.linux_sg.name}"]
   associate_public_ip_address = true
   tags {
-    Name = "${lookup(var.node1, "name_tag")}"
+    Name = "${lookup(var.node1-centos, "name_tag")}"
   }
   key_name = "${var.key_name}"
 
   connection {
-    host     = "${aws_instance.node1.public_ip}"
+    host     = "${aws_instance.node1-centos.public_ip}"
     user     = "centos"
     key_file = "${var.ssh_key_file}"
   }
@@ -319,6 +395,76 @@ resource "aws_instance" "node1" {
       "sudo cp /tmp/data_collector.rb /etc/chef/client.d/data_collector.rb"
     ]
   }
+}
+
+# node1-ubuntu
+resource "aws_instance" "node1-ubuntu" {
+  ami = "${lookup(var.node1-ubuntu, "ami")}"
+  availability_zone = "${var.region}${var.availability_zone}"
+  instance_type = "${lookup(var.node1-ubuntu, "instance_type")}"
+  security_groups = ["${aws_security_group.linux_sg.name}"]
+  associate_public_ip_address = true
+  tags {
+    Name = "${lookup(var.node1-ubuntu, "name_tag")}"
+  }
+  key_name = "${var.key_name}"
+
+  connection {
+    host     = "${aws_instance.node1-ubuntu.public_ip}"
+    user     = "ubuntu"
+    key_file = "${var.ssh_key_file}"
+  }
+
+  provisioner "file" {
+    content = "${data.template_file.data_collector.rendered}"
+    destination = "/tmp/data_collector.rb"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "sudo mkdir -p /etc/chef/trusted_certs",
+      "sudo chmod 0777 /etc/chef/trusted_certs",
+      "sudo mkdir -p /etc/chef/client.d",
+      "sudo cp /tmp/data_collector.rb /etc/chef/client.d/data_collector.rb"
+    ]
+  }
+}
+
+# Windows node
+resource "aws_instance" "node1-windows" {
+  ami = "${lookup(var.node1-windows, "ami")}"
+  availability_zone = "${var.region}${var.availability_zone}"
+  instance_type = "${lookup(var.node1-windows, "instance_type")}"
+  security_groups = ["${aws_security_group.windows_webserver.name}"]
+  associate_public_ip_address = true
+  tags {
+    Name = "${lookup(var.node1-windows, "name_tag")}"
+  }
+  key_name = "${var.key_name}"
+  lifecycle {
+    ignore_changes = [
+      "ebs_block_device"
+    ]
+  }
+
+  user_data = <<EOF
+<powershell>
+# turn off PowerShell execution policy restrictions
+Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope LocalMachine -Force
+
+Get-NetFirewallPortFilter | ?{$_.LocalPort -eq 5985 } | Get-NetFirewallRule | ?{ $_.Direction -eq "Inbound" -and $_.Profile -eq "Public" -and $_.Action -eq "Allow"} | Set-NetFirewallRule -RemoteAddress "Any"
+
+$admin = [adsi]("WinNT://./administrator, user")
+$admin.psbase.invoke("SetPassword", "${var.windows_password}")
+
+New-Item -ItemType directory -Path C:\Temp
+
+New-Item C:\chef\client.d -ItemType Directory -Force
+Set-Content -Path "C:\chef\client.d\data_collector.rb" @"
+${data.template_file.data_collector.rendered}
+"@
+</powershell>
+EOF
 }
 
 # workstation
@@ -341,20 +487,15 @@ resource "aws_instance" "workstation" {
     key_file = "${var.ssh_key_file}"
   }
 
-  provisioner "file" {
-    content = "${data.template_file.install-chef-server.rendered}"
-    destination = "/tmp/install-chef-server.sh"
-  }
+  #provisioner "file" {
+  #  content = "${data.template_file.install-chef-server.rendered}"
+  #  destination = "/tmp/install-chef-server.sh"
+  #}
 
-  provisioner "file" {
-    content = "${data.template_file.install-chef-automate.rendered}"
-    destination = "/tmp/install-chef-automate.sh"
-  }
-
-  provisioner "file" {
-    source = "secrets/automate.license"
-    destination = "/tmp/automate.license"
-  }
+  #provisioner "file" {
+  #  content = "${data.template_file.install-chef-automate.rendered}"
+  #  destination = "/tmp/install-chef-automate.sh"
+  #}
 
   provisioner "file" {
     source = "${var.ssh_key_file}"
@@ -363,26 +504,14 @@ resource "aws_instance" "workstation" {
 
   provisioner "remote-exec" {
     inline = [
-      # Set local file permissions
-      "chmod 0600 ~/.ssh/private_key",
-      "chmod +x /tmp/install-chef-server.sh",
-      "chmod +x /tmp/install-chef-automate.sh",
-      # Copy files to Chef server
-      "scp -i ~/.ssh/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /tmp/install-chef-server.sh ubuntu@${aws_instance.chef_server.public_ip}:/tmp/install-chef-server.sh",
-      # Install Chef server
-      "ssh -i ~/.ssh/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@${aws_instance.chef_server.public_ip} '/tmp/install-chef-server.sh'",
-      # Retrieve the admin key
-      "scp -i ~/.ssh/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@${aws_instance.chef_server.public_ip}:~/drop/delivery.pem /tmp/delivery.pem",
-      # Copy files to Chef Automate
-      "scp -i ~/.ssh/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /tmp/install-chef-automate.sh ubuntu@${aws_instance.chef_automate.public_ip}:/tmp/install-chef-automate.sh",
-      "scp -i ~/.ssh/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /tmp/automate.license ubuntu@${aws_instance.chef_automate.public_ip}:/tmp/automate.license",
-      "scp -i ~/.ssh/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /tmp/delivery.pem ubuntu@${aws_instance.chef_automate.public_ip}:/tmp/delivery.pem",
-      # Install Chef Automate
-      "ssh -i ~/.ssh/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@${aws_instance.chef_automate.public_ip} '/tmp/install-chef-automate.sh'",
-      # Copy cert from Chef Automate to node
-      "scp -i ~/.ssh/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@${aws_instance.chef_automate.public_ip}:/var/opt/delivery/nginx/ca/${aws_instance.chef_automate.public_dns}.crt /tmp/${aws_instance.chef_automate.public_dns}.crt",
-      "scp -i ~/.ssh/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /tmp/${aws_instance.chef_automate.public_dns}.crt centos@${aws_instance.node1.public_ip}:/etc/chef/trusted_certs",
+      "mkdir -p ~/Downloads",
+      "chmod 0600 ~/.ssh/private_key" # Set local file permissions
     ]
+  }
+
+  provisioner "file" {
+    source = "secrets/automate.license"
+    destination = "~/Downloads/automate.license"
   }
 
   provisioner "file" {
@@ -411,17 +540,32 @@ resource "aws_instance" "workstation" {
     "chef_automate": {
       "fqdn": "${aws_instance.chef_automate.public_dns}"
     },
-    "nodes": {
-      "rhel": {
-        "node1": {
-          "name": "node1",
-          "identity_file": "~/.ssh/private_key",
-          "ip_address": "${aws_instance.node1.public_ip}",
-          "ssh_user": "centos",
-          "run_list": "recipe[learn_chef_httpd]"
-        }
+    "nodes": [
+      {
+        "name": "node1-centos",
+        "platform": "rhel",
+        "ssh_user": "centos",
+        "identity_file": "~/.ssh/private_key",
+        "ip_address": "${aws_instance.node1-centos.public_ip}",
+        "cookbook": "learn_chef_httpd"
+      },
+      {
+        "name": "node1-ubuntu",
+        "platform": "ubuntu",
+        "ssh_user": "ubuntu",
+        "identity_file": "~/.ssh/private_key",
+        "ip_address": "${aws_instance.node1-ubuntu.public_ip}",
+        "cookbook": "learn_chef_apache2"
+      },
+      {
+        "name": "node1-windows",
+        "platform": "windows",
+        "winrm_user": "Administrator",
+        "password": "${var.windows_password}",
+        "ip_address": "${aws_instance.node1-windows.public_ip}",
+        "cookbook": "learn_chef_iis"
       }
-    },
+    ],
     "products": {
       "versions": {
         "automate": {
@@ -447,9 +591,19 @@ resource "aws_instance" "workstation" {
           "ami_id": "${lookup(var.workstation, "ami")}",
           "instance_type": "${lookup(var.workstation, "instance_type")}"
         },
-        "node": {
-          "ami_id": "${lookup(var.node1, "ami")}",
-          "instance_type": "${lookup(var.node1, "instance_type")}"
+        "nodes": {
+          "rhel": {
+            "ami_id": "${lookup(var.node1-centos, "ami")}",
+            "instance_type": "${lookup(var.node1-centos, "instance_type")}"
+          },
+          "ubuntu": {
+            "ami_id": "${lookup(var.node1-ubuntu, "ami")}",
+            "instance_type": "${lookup(var.node1-ubuntu, "instance_type")}"
+          },
+          "windows": {
+            "ami_id": "${lookup(var.node1-windows, "ami")}",
+            "instance_type": "${lookup(var.node1-windows, "instance_type")}"
+          }
         }
       }
     }
