@@ -5,13 +5,13 @@ This tutorial was last tested using this configuration:
   * **Image URN:** <%= node['cloud']['azure']['chef_server']['image_urn'] %>
   * **Size:** <%= node['cloud']['azure']['chef_server']['size'] %>
 <br><br>
-* A CentOS 7 node on Microsoft Azure
+* A node running <%= @node_display_name %> on Microsoft Azure
   * **Location:** <%= node['cloud']['azure']['location'] %>
-  * **Image URN:** <%= node['cloud']['azure']['node']['image_urn'] %>
-  * **Size:** <%= node['cloud']['azure']['node']['size'] %>
+  * **Image URN:** <%= node['cloud']['azure']['nodes'][@node_platform]['image_urn'] %>
+  * **Size:** <%= node['cloud']['azure']['nodes'][@node_platform]['size'] %>
   * **Software:** Chef client <%= @chef_client_version %>
 <br><br>
-* An Ubuntu 14.04 workstation on Microsoft Azure
+* A workstation running Ubuntu 14.04 on Microsoft Azure
   * **Location:** <%= node['cloud']['azure']['location'] %>
   * **Image URN:** <%= node['cloud']['azure']['workstation']['image_urn'] %>
   * **Size:** <%= node['cloud']['azure']['workstation']['size'] %>
