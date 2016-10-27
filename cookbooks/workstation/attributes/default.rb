@@ -1,13 +1,13 @@
 default['products']['versions'].tap do |product|
-  product['virtualbox']['ubuntu'] = '5.0'
-  product['virtualbox']['windows'] = '5.0.24.108355'
+  product['virtualbox']['ubuntu'] = '5.1'
+  product['virtualbox']['windows'] = '5.1.4.110229'
 
-  product['vagrant']['ubuntu'] = '1.8.4'
-  product['vagrant']['windows'] = '1.8.4'
+  product['vagrant']['ubuntu'] = '1.8.6'
+  product['vagrant']['windows'] = '1.8.6'
 
-  product['chefdk']['ubuntu'] = "stable-0.18.26"
-  product['chefdk']['rhel'] = "stable-0.18.26"
-  product['chefdk']['windows'] = "stable-0.18.26"
+  product['chefdk']['ubuntu'] = "stable-0.18.30"
+  product['chefdk']['centos'] = "stable-0.18.30"
+  product['chefdk']['windows'] = "stable-0.18.30"
 
   product['chef_server']['ubuntu'] = 'stable-12.8.0'
   product['compliance']['ubuntu'] = 'stable-1.5.14'

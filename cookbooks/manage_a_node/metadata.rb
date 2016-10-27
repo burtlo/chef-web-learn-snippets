@@ -8,5 +8,4 @@ version '0.1.0'
 
 depends 'snippet'
 depends 'workstation'
-depends 'chef_server'
 depends 'git', '~> 4.6.0'

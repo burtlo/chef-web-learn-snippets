@@ -20,6 +20,7 @@ property :prompt_character, [ String, nil ], default: nil
 property :left_justify, [ TrueClass, FalseClass ], default: false
 property :write_stdout, [ TrueClass, FalseClass ], default: true
 property :write_stderr, [ TrueClass, FalseClass ], default: true
+property :write_exitstatus, [ TrueClass, FalseClass ], default: false
 
 def initialize(*args)
   super
@@ -123,6 +124,13 @@ action :run do
     # Write stderr.
     file ::File.join(snippet_full_path, 'stderr') do
       content stderr
+    end
+  end
+
+  # Write exitstatus.
+  if write_exitstatus
+    file ::File.join(snippet_full_path, 'exitstatus') do
+      content "#{prompt_character} echo $?\n#{result.exitstatus.to_s}\n"
     end
   end
 end

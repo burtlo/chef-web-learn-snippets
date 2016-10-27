@@ -15,5 +15,8 @@ platforms:
 suites:
   - name: default
     run_list:
-      - recipe[chef_server::default]
+      - recipe[local_development::default]
+    verifier:
+      inspec_tests:
+        - test/recipes
     attributes:

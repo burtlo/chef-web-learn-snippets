@@ -14,6 +14,7 @@ end
 chocolatey_package 'vagrant' do
   action :install
   version node['products']['versions']['vagrant']['windows']
+  options "--ignore-package-exit-codes" # todo: supply valid exit code instead
   notifies :run, 'powershell_script[add-vagrant-to-path]', :immediately
 end
 
@@ -28,7 +29,7 @@ end
 
 # TODO: Seems you need this for Vagrant 1.8.4. Check back later.
 # https://github.com/mitchellh/vagrant/issues/7490
-windows_zipfile 'c:\hashicorp\vagrant\embedded' do
+windows_zipfile 'c:/hashicorp/vagrant/embedded' do
   source 'https://www.rubyencoder.com/support/files/rgloader.mingw.zip'
   action :unzip
   overwrite true

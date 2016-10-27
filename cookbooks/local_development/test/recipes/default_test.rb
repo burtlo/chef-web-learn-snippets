@@ -1,6 +1,6 @@
 # # encoding: utf-8
 
-# Inspec test for recipe chef_server::aws_marketplace
+# Inspec test for recipe local_development::default
 
 # The Inspec reference, with examples and extensive documentation, can be
 # found at https://docs.chef.io/inspec_reference.html
