@@ -36,6 +36,8 @@ with_snippet_options(
     cookbook = scenario['cookbook']
     platform = scenario['platform']
 
+    with_snippet_options(platform: platform)
+
     drivers.each do |driver|
       with_snippet_options(
         virtualization: driver,

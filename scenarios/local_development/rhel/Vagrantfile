@@ -34,6 +34,11 @@ Vagrant.configure(2) do |config|
             "cookbook" => "learn_chef_httpd",
             "drivers" => "vagrant",
             "platform" => "rhel"
+          },
+          {
+            "cookbook" => "learn_chef_apache2",
+            "drivers" => "vagrant",
+            "platform" => "ubuntu"
           }
         ]
       }
