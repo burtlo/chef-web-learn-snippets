@@ -19,11 +19,6 @@ Vagrant.configure(2) do |config|
     cs.vm.hostname = "centos-72"
     cs.vm.network "private_network", ip: "192.168.33.33"
 
-    cs.vm.provider "virtualbox" do |v|
-      v.memory = 256
-      v.cpus = 1
-    end
-
     cs.vm.provision "chef_solo" do |chef|
       chef.product = "chef"
       chef.channel = chef_channel

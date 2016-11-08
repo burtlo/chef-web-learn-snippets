@@ -1,0 +1,29 @@
+---
+driver:
+  name: ec2
+  aws_ssh_key_id: <%= @config['aws_ssh_key_id'] %>
+  region: <%= @config['aws_region'] %>
+  availability_zone: <%= @config['aws_availability_zone'] %>
+  subnet_id: <%= @config['aws_subnet'] %>
+  instance_type: m1.small
+  image_id: <%= @config['aws_ami'] %>
+  security_group_ids: <%= @config['aws_security_group_ids'] %>
+  retryable_tries: 120
+
+provisioner:
+  name: chef_zero
+
+transport:
+  ssh_key: <%= @config['aws_ssh_key'] %>
+
+platforms:
+  - name: windows-2012r2
+
+suites:
+  - name: default
+    run_list:
+      - recipe[learn_chef_iis::default]
+    verifier:
+      inspec_tests:
+        - test/recipes
+    attributes:

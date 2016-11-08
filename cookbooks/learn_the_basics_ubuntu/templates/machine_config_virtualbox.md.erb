@@ -1,5 +1,4 @@
-This tutorial was last tested with these configurations:
+This tutorial was last tested with this configuration:
 
-* A host computer running Ubuntu 14.04, Vagrant <%= node['products']['versions']['vagrant']['ubuntu'] %>, VirtualBox <%= node['products']['versions']['virtualbox']['ubuntu'] %>
-* A host computer running Windows Server 2012 R2, Vagrant <%= node['products']['versions']['vagrant']['windows'] %>, VirtualBox <%= node['products']['versions']['virtualbox']['windows'] %>, Chef Development Kit <%= node['products']['versions']['chefdk']['windows'].split('-')[1] %>
+* A workstation running Ubuntu 14.04, Vagrant <%= @vagrant_ubuntu_version %>, VirtualBox <%= @virtualbox_ubuntu_version %>, Chef Development Kit <%= node['products']['versions']['chefdk']['ubuntu'].split('-')[1] %>
 * Ubuntu 14.04 instances on VirtualBox, Chef Development Kit <%= node['products']['versions']['chefdk']['ubuntu'].split('-')[1] %>

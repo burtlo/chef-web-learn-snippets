@@ -10,7 +10,7 @@ channel = node['products']['versions']['chefdk'][platform].split('-')[0]
 version = node['products']['versions']['chefdk'][platform].split('-')[1]
 
 case platform
-when 'ubuntu', 'rhel'
+when 'ubuntu', 'centos'
   snippet_execute 'install-chefdk' do
     command "curl https://omnitruck.chef.io/install.sh | sudo bash -s -- -P chefdk -c #{channel} -v #{version}"
     step 'install-the-chef-dk'

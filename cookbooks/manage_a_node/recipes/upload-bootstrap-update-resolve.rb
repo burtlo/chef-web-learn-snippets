@@ -108,7 +108,7 @@ EOH_RHEL
       directory "delete-dot-chef-#{node_platform}" do
         path ::File.expand_path('~/learn-chef/.chef')
         action :delete
-        recursive false
+        recursive true
       end
 
       with_snippet_options(step: 'mkdir-dot-chef') do

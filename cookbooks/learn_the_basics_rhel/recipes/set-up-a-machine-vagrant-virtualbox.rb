@@ -118,6 +118,16 @@ with_snippet_options(
     end
   end
 
+  vagrant_ubuntu_version = '/vagrant/vagrant-ubuntu.version'
+  virtualbox_ubuntu_version = '/vagrant/virtualbox-ubuntu.version'
+  snippet_config 'learn-the-basics' do
+    variables lazy {
+      ({
+        :vagrant_ubuntu_version => ::File.read(vagrant_ubuntu_version),
+        :virtualbox_ubuntu_version => ::File.read(virtualbox_ubuntu_version)
+      })
+    }
+  end
 end
 
 # Play the rest of the scenario on a VM.
