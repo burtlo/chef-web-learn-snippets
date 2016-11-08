@@ -20,6 +20,42 @@ with_snippet_options(
     cwd: '~',
     step: 'set-up-your-working-directory') do
 
+    ### Prerequisite setup
+
+    # Install vagrant-winrm to work with Windows on Vagrant/VirtualBox.
+    snippet_execute 'install-vagrant-winrm' do
+      command 'vagrant plugin install vagrant-winrm'
+      not_if 'vagrant plugin list | grep vagrant-winrm'
+    end
+
+    # Copy the credentials file and EC2 SSH key so we can work with AWS.
+    directory ::File.expand_path('~/.ssh')
+    file ::File.expand_path('~/.ssh/learn-chef.pem') do
+      content ::File.read("/vagrant/secrets/learn-chef.pem")
+      mode '0600'
+    end
+    directory ::File.expand_path('~/.aws')
+    file ::File.expand_path('~/.aws/credentials') do
+      content ::File.read("/vagrant/secrets/aws/credentials")
+      mode '0600'
+    end
+
+    # Install kitchen-azurerm
+    package 'build-essential'
+    snippet_execute 'install-kitchen-azurerm' do
+      command 'chef gem install kitchen-azurerm'
+      not_if 'chef gem list | grep kitchen-azurerm'
+    end
+
+    # Copy Azure credentials file.
+    directory ::File.expand_path('~/.azure')
+    file ::File.expand_path('~/.azure/credentials') do
+      content ::File.read("/vagrant/secrets/azure/credentials")
+      mode '0600'
+    end
+
+    ###
+
     snippet_execute 'mkdir-learn-chef-cookbooks' do
       command 'mkdir ~/learn-chef/cookbooks'
       not_if 'stat ~/learn-chef/cookbooks'
@@ -35,6 +71,16 @@ with_snippet_options(
     drivers = Array(scenario['drivers'])
     cookbook = scenario['cookbook']
     platform = scenario['platform']
+    overlay_drivers = Array(scenario['overlay_drivers'])
+
+    case platform
+    when 'windows'
+      kitchen_exec_verify_service = '(Invoke-WebRequest -UseBasicParsing localhost).Content'
+      kitchen_exec_verify_owner = 'Get-Acl c:\inetpub\wwwroot\Default.htm | Format-List'
+    else
+      kitchen_exec_verify_service = 'curl localhost'
+      kitchen_exec_verify_owner = 'stat /var/www/html/index.html'
+    end
 
     with_snippet_options(platform: platform)
 
@@ -46,7 +92,7 @@ with_snippet_options(
 
         # Ensure the cookbook does not exist.
         directory "rm-#{cookbook}-#{driver}" do
-          path "~/learn-chef/cookbooks/#{cookbook}"
+          path ::File.expand_path("~/learn-chef/cookbooks/#{cookbook}")
           action :delete
           recursive true
         end
@@ -68,6 +114,28 @@ with_snippet_options(
             file_path "~/learn-chef/cookbooks/#{cookbook}/.kitchen.yml"
             content lazy { ::File.read(::File.expand_path("~/learn-chef/cookbooks/#{cookbook}/.kitchen.yml")) }
             write_system_file false
+          end
+        end
+
+        # Overlay .kitchen.yml if specified.
+        # TODO: Note that for now, we cheat on Windows by using a pre-built box.
+        if overlay_drivers.include?(driver)
+          template "overlay-kitchen-yml-#{cookbook}-#{driver}" do
+            name ::File.expand_path("~/learn-chef/cookbooks/#{cookbook}/.kitchen.yml")
+            source "#{cookbook}/.kitchen-#{driver}.yml"
+            variables ({
+              config: node['driver_config'][cookbook][driver]
+            })
+          end
+          with_snippet_options(step: "update-kitchen-yml-#{cookbook}-#{driver}") do
+            snippet_code_block "kitchen-yml-#{cookbook}-#{driver}-2" do
+              file_path "~/learn-chef/cookbooks/#{cookbook}/.kitchen.yml"
+              content lazy {
+                # The `sub` hides our Azure subscription id
+                ::File.read(::File.expand_path("~/learn-chef/cookbooks/#{cookbook}/.kitchen.yml")).sub(/subscription_id: .+$/, "subscription_id: 12345678-YOUR-GUID-HERE-123456789ABC")
+               }
+              write_system_file false
+            end
           end
         end
 
@@ -118,7 +186,7 @@ with_snippet_options(
         # kitchen ~login~ exec
         with_snippet_options(step: "verify-#{cookbook}-#{driver}", cwd: "~/learn-chef/cookbooks/#{cookbook}") do
           snippet_execute "kitchen-exec-#{cookbook}-#{driver}-1" do
-            command "kitchen exec -c 'curl localhost'"
+            command "kitchen exec -c '#{kitchen_exec_verify_service}'"
           end
         end
 
@@ -180,8 +248,6 @@ with_snippet_options(
             source_filename "#{cookbook}/add-web-user-err.rb"
           end
 
-          # TODO: Remember to mention we don't need to update metadata.
-
           # kitchen converge
           snippet_execute "kitchen-converge-#{cookbook}-#{driver}-3" do
             command "kitchen converge"
@@ -214,10 +280,16 @@ with_snippet_options(
 
           # kitchen exec
           snippet_execute "kitchen-exec-#{cookbook}-#{driver}-2" do
-            command "kitchen exec -c 'curl localhost'"
+            command "kitchen exec -c '#{kitchen_exec_verify_service}'"
           end
           snippet_execute "kitchen-exec-#{cookbook}-#{driver}-3" do
-            command "kitchen exec -c 'stat /var/www/html/index.html'"
+            command "kitchen exec -c '#{kitchen_exec_verify_owner}'"
+          end
+
+          # Don't forget to delete the instance. This is especially important for cloud.
+          execute "kitchen-final-destroy" do
+            command 'kitchen destroy'
+            cwd ::File.expand_path("~/learn-chef/cookbooks/#{cookbook}")
           end
 
         end

@@ -1,0 +1,28 @@
+---
+driver:
+  name: azurerm
+
+driver_config:
+  subscription_id: <%= @config['azure_subscription_id'] %>
+  location: "East US"
+  machine_size: "Standard_D2"
+
+provisioner:
+  name: chef_zero
+
+platforms:
+  - name: windows-2012r2
+    driver_config:
+      image_urn: MicrosoftWindowsServer:WindowsServer:2012-R2-Datacenter:latest
+    transport:
+      name: winrm
+      username: azure
+
+suites:
+  - name: default
+    run_list:
+      - recipe[learn_chef_iis::default]
+    verifier:
+      inspec_tests:
+        - test/recipes
+    attributes:
