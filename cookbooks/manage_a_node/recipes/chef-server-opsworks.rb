@@ -3,6 +3,7 @@
 # Recipe:: chef-server-opsworks
 #
 # Copyright (c) 2016 The Authors, All Rights Reserved.
+#
 package 'unzip'
 package 'tree'
 
