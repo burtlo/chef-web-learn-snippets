@@ -1,0 +1,17 @@
+This tutorial was last tested using this configuration:
+
+* Chef Automate <%= node['products']['versions']['automate']['amazon-linux'].split('-')[1] %> on AWS OpsWorks
+  * **Region:** <%= node['cloud']['aws']['region'] %>
+  * **Instance type:** <%= node['cloud']['aws']['automate']['instance_type'] %>
+<br /><br />
+* A node running <%= @node_display_name %> on Amazon Web Services
+  * **Region:** <%= node['cloud']['aws']['region'] %>
+  * **AMI ID:** <%= node['cloud']['aws']['nodes'][@node_platform]['ami_id'] %>
+  * **Instance type:** <%= node['cloud']['aws']['nodes'][@node_platform]['instance_type'] %>
+  * **Software:** Chef client <%= @chef_client_version %>
+<br /><br />
+* A workstation running Ubuntu 14.04 on Amazon Web Services
+  * **Region:** <%= node['cloud']['aws']['region'] %>
+  * **AMI ID:** <%= node['cloud']['aws']['workstation']['ami_id'] %>
+  * **Instance type:** <%= node['cloud']['aws']['workstation']['instance_type'] %>
+  * **Software:** Chef Development Kit <%= node['products']['versions']['chefdk']['ubuntu'].split('-')[1] %>

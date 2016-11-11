@@ -254,7 +254,7 @@ EOH
         node.run_state['bootstrap_command'][node_platform] = "knife bootstrap windows winrm #{ip_address} --winrm-user #{n['winrm_user']} --winrm-password '#{n['password']}' --node-name #{node_name} --run-list 'recipe[#{cookbook}]'"
       else # some sort of Linux
         case node['snippets']['virtualization']
-        when 'aws-automate', 'aws-marketplace', 'azure-marketplace'
+        when 'aws-automate', 'aws-marketplace', 'azure-marketplace', 'opsworks'
           node.run_state['bootstrap_command'][node_platform] = "knife bootstrap #{ip_address} --ssh-user #{n['ssh_user']} --sudo --identity-file #{n['identity_file']} --node-name #{node_name} --run-list 'recipe[#{cookbook}]'"
         when 'hosted'
           # Place private key
@@ -341,7 +341,7 @@ EOH
         node.run_state['knife_ssh_command'][node_platform] = "knife winrm #{ip_address} chef-client --manual-list --winrm-user #{n['winrm_user']} --winrm-password '#{n['password']}'"
       else
         case node['snippets']['virtualization']
-        when 'hosted', 'aws-automate', 'aws-marketplace', 'azure-marketplace'
+        when 'hosted', 'aws-automate', 'aws-marketplace', 'azure-marketplace', 'opsworks'
           node.run_state['knife_ssh_command'][node_platform]  = "knife ssh #{ip_address} 'sudo chef-client' --manual-list --ssh-user #{n['ssh_user']} --identity-file #{n['identity_file']}"
         when 'virtualbox'
           ruby_block "vagrant-ssh-config-#{node_name}-2" do
