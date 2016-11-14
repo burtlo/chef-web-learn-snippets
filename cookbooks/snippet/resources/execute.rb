@@ -55,7 +55,7 @@ action :run do
   env = node['workstation']['environment'][node['platform']]
   options[:environment] = { "PATH" => env } if env
 
-  if shell == 'powershell'
+  if shell == 'powershell' || shell == 'ps'
     result = powershell_out(translate_command, options)
   else
     result = shell_out(translate_command, options)

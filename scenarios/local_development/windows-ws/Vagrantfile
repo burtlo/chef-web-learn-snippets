@@ -1,0 +1,57 @@
+# encoding: utf-8
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+chef_version = "stable-12.12.15"
+
+Vagrant.configure(2) do |config|
+
+  config.vm.define "workstation" do |cs|
+    cs.vm.box = 'opentable/win-2012r2-standard-amd64-nocm'
+    cs.vm.hostname = "workstation-windows"
+    cs.vm.network "private_network", ip: "192.168.145.132"
+
+    cs.vm.provider "vmware_fusion" do |v|
+      v.memory = 5120
+      # Enable nested virtualization.
+      v.customize ["modifyvm", :id, "--hwvirtex", "on"]
+      v.vmx["vhv.enable"] = "TRUE"
+      v.vmx["hypervisor.cpuid.v0"] = "FALSE"
+      v.cpus = 4
+    end
+
+    cs.vm.provision "shell", path: "../../shared/scripts/SetPath.ps1"
+
+    for i in 0..1
+      cs.vm.provision "chef_solo" do |chef|
+        chef.install = (i == 0)
+        chef.attempts = 10 if i == 1
+        chef.product = "chef"
+        chef.channel = chef_version.split('-')[0]
+        chef.version = chef_version.split('-')[1]
+        chef.cookbooks_path = "vendored-cookbooks"
+        chef.add_recipe "workstation::default" if i == 0
+        chef.add_recipe "local_development::hyper_v"
+        #chef.add_recipe "local_development::default" if i == 1
+        chef.log_level = "warn"
+        chef.json = {
+          "scenarios" => [
+            {
+              "cookbook" => "learn_chef_iis",
+              "drivers" => "hyper-v",
+              "platform" => "windows",
+              "overlay_drivers" => ["hyper-v"]
+            }
+          ],
+          "driver_config" => {
+            "learn_chef_iis" => {
+              "hyper-v" => {
+                "foo" => "bar"
+              }
+            }
+          }
+        }
+      end
+    end
+  end
+end

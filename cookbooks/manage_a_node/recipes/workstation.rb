@@ -5,8 +5,10 @@
 # Copyright (c) 2016 The Authors, All Rights Reserved.
 
 # Install git
-git_client 'default' do
-  action :install
+if node['platform'] != 'windows'
+  git_client 'default' do
+    action :install
+  end
 end
 
 # Install Chef DK
