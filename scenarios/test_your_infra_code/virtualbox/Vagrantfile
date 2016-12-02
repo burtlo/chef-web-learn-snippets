@@ -34,14 +34,6 @@ Vagrant.configure(2) do |config|
       chef.add_recipe "test_your_infra_code::default"
       chef.log_level = "warn"
       chef.json = {
-        "products" => {
-          "versions" => {
-            "chefdk" => {
-              "ubuntu" => "stable-0.17.17",
-              "windows" => "stable-0.17.17"
-            }
-          }
-        },
         "snippets" => {
           "virtualization" => "virtualbox"
         }

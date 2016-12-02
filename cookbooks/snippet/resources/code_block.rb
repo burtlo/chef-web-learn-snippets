@@ -113,7 +113,7 @@ def map_language(file_path)
 
   file_ext = ::File.extname(file_path)
   case file_ext
-  when '.rb'
+  when '.rb', '.json'
     'ruby'
   when '.sh'
     'shell'
@@ -127,7 +127,7 @@ def map_language(file_path)
   when ''
     basename = ::File.basename(file_path)
     case basename
-    when 'Vagrantfile', 'sshd_config'
+    when 'Vagrantfile', 'Berksfile', 'sshd_config'
       'ruby'
     else
       nil

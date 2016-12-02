@@ -16,7 +16,7 @@ variable "chef_server_channel" {
 }
 
 variable "chef_server_version" {
-  default = "12.9.1"
+  default = "12.11.1"
 }
 
 variable push_jobs_channel {
@@ -32,7 +32,7 @@ variable delivery_channel {
 }
 
 variable delivery_version {
-  default = "0.5.370"
+  default = "0.6.7"
 }
 
 # Configure the AWS Provider
@@ -297,38 +297,6 @@ resource "aws_security_group" "workstation" {
   }
 }
 
-# Template for initial configuration bash script
-#data "template_file" "install-chef-server" {
-#    template = "${file("../../shared/scripts/install-chef-server.tpl")}"
-#    vars {
-#      server_channel = "${var.chef_server_channel}"
-#      server_version = "${var.chef_server_version}"
-#      server_fqdn = "${aws_instance.chef_automate.public_dns}"
-#      push_jobs_channel = "${var.push_jobs_channel}"
-#      push_jobs_version = "${var.push_jobs_version}"
-#    }
-#}
-
-# Template for initial configuration bash script
-#data "template_file" "install-chef-automate" {
-#    template = "${file("../../shared/scripts/install-chef-automate.tpl")}"
-#    vars {
-#      delivery_channel = "${var.delivery_channel}"
-#      delivery_version = "${var.delivery_version}"
-#      chef_server_fqdn = "${aws_instance.chef_server.public_dns}"
-#      chef_automate_fqdn = "${aws_instance.chef_automate.public_dns}"
-#      chef_automate_org = "4thcoffee"
-#    }
-#}
-
-# Template for initial configuration bash script
-data "template_file" "data_collector" {
-    template = "${file("../../shared/scripts/data_collector.rb.tpl")}"
-    vars {
-      chef_automate_fqdn = "${aws_instance.chef_automate.public_dns}"
-    }
-}
-
 # Chef server
 resource "aws_instance" "chef_server" {
   ami = "${lookup(var.chef_server, "ami")}"
@@ -375,26 +343,6 @@ resource "aws_instance" "node1-centos" {
     Name = "${lookup(var.node1-centos, "name_tag")}"
   }
   key_name = "${var.key_name}"
-
-  connection {
-    host     = "${aws_instance.node1-centos.public_ip}"
-    user     = "centos"
-    key_file = "${var.ssh_key_file}"
-  }
-
-  provisioner "file" {
-    content = "${data.template_file.data_collector.rendered}"
-    destination = "/tmp/data_collector.rb"
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "sudo mkdir -p /etc/chef/trusted_certs",
-      "sudo chmod 0777 /etc/chef/trusted_certs",
-      "sudo mkdir -p /etc/chef/client.d",
-      "sudo cp /tmp/data_collector.rb /etc/chef/client.d/data_collector.rb"
-    ]
-  }
 }
 
 # node1-ubuntu
@@ -408,26 +356,6 @@ resource "aws_instance" "node1-ubuntu" {
     Name = "${lookup(var.node1-ubuntu, "name_tag")}"
   }
   key_name = "${var.key_name}"
-
-  connection {
-    host     = "${aws_instance.node1-ubuntu.public_ip}"
-    user     = "ubuntu"
-    key_file = "${var.ssh_key_file}"
-  }
-
-  provisioner "file" {
-    content = "${data.template_file.data_collector.rendered}"
-    destination = "/tmp/data_collector.rb"
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "sudo mkdir -p /etc/chef/trusted_certs",
-      "sudo chmod 0777 /etc/chef/trusted_certs",
-      "sudo mkdir -p /etc/chef/client.d",
-      "sudo cp /tmp/data_collector.rb /etc/chef/client.d/data_collector.rb"
-    ]
-  }
 }
 
 # Windows node
@@ -457,12 +385,6 @@ Get-NetFirewallPortFilter | ?{$_.LocalPort -eq 5985 } | Get-NetFirewallRule | ?{
 $admin = [adsi]("WinNT://./administrator, user")
 $admin.psbase.invoke("SetPassword", "${var.windows_password}")
 
-New-Item -ItemType directory -Path C:\Temp
-
-New-Item C:\chef\client.d -ItemType Directory -Force
-Set-Content -Path "C:\chef\client.d\data_collector.rb" @"
-${data.template_file.data_collector.rendered}
-"@
 </powershell>
 EOF
 }
@@ -479,23 +401,11 @@ resource "aws_instance" "workstation" {
   }
   key_name = "${var.key_name}"
 
-  #user_data = "${file("../../shared/scripts/install-chef-server.txt")}"
-
   connection {
     host     = "${aws_instance.workstation.public_ip}"
     user     = "ubuntu"
     key_file = "${var.ssh_key_file}"
   }
-
-  #provisioner "file" {
-  #  content = "${data.template_file.install-chef-server.rendered}"
-  #  destination = "/tmp/install-chef-server.sh"
-  #}
-
-  #provisioner "file" {
-  #  content = "${data.template_file.install-chef-automate.rendered}"
-  #  destination = "/tmp/install-chef-automate.sh"
-  #}
 
   provisioner "file" {
     source = "${var.ssh_key_file}"

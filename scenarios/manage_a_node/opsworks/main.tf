@@ -5,13 +5,13 @@ variable "ssh_key_file" {}
 
 ###
 ### TODO: Manually create an OpsWorks stack and update these values.
-### TODO: Also remember to copy download.zip to the secrets directory.
+### TODO: Also remember to copy starter_kit.zip to the secrets directory.
 ###
 variable "chef_automate" {
   type = "map"
   default = {
-    fqdn = "test3-jtqdxbq6gsoqdfnl.gamma.opsworks-cm.io" #"test2-ctpwrfryy0ui4ylt.gamma.opsworks-cm.io"
-    version = "12.9.1"
+    fqdn = "test-xcdbs22xaaf3cmpz.gamma.opsworks-cm.io"
+    version = "12.11.1"
     instance_type = "t2.medium"
   }
 }
@@ -61,7 +61,7 @@ variable "windows_password" {
 variable "node1-windows" {
   type = "map"
   default = {
-    ami = "ami-ee7805f9" # Windows Server 2012 R2
+    ami = "ami-3f0c4628" # Windows Server 2012 R2
     instance_type = "t2.medium"
     name_tag = "node1-windows"
   }
@@ -185,14 +185,6 @@ resource "aws_security_group" "workstation" {
   }
 }
 
-# Template for initial configuration bash script
-data "template_file" "data_collector" {
-    template = "${file("../../shared/scripts/data_collector.rb.tpl")}"
-    vars {
-      chef_automate_fqdn = "${lookup(var.chef_automate, "fqdn")}"
-    }
-}
-
 # node1-centos
 resource "aws_instance" "node1-centos" {
   ami = "${lookup(var.node1-centos, "ami")}"
@@ -204,97 +196,51 @@ resource "aws_instance" "node1-centos" {
     Name = "${lookup(var.node1-centos, "name_tag")}"
   }
   key_name = "${var.key_name}"
-
-  connection {
-    host     = "${aws_instance.node1-centos.public_ip}"
-    user     = "centos"
-    key_file = "${var.ssh_key_file}"
-  }
-
-  provisioner "file" {
-    content = "${data.template_file.data_collector.rendered}"
-    destination = "/tmp/data_collector.rb"
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "sudo mkdir -p /etc/chef/trusted_certs",
-      "sudo chmod 0777 /etc/chef/trusted_certs",
-      "sudo mkdir -p /etc/chef/client.d",
-      "sudo cp /tmp/data_collector.rb /etc/chef/client.d/data_collector.rb"
-    ]
-  }
 }
 
 # node1-ubuntu
-# resource "aws_instance" "node1-ubuntu" {
-#   ami = "${lookup(var.node1-ubuntu, "ami")}"
-#   availability_zone = "${var.region}${var.availability_zone}"
-#   instance_type = "${lookup(var.node1-ubuntu, "instance_type")}"
-#   security_groups = ["${aws_security_group.linux_sg.name}"]
-#   associate_public_ip_address = true
-#   tags {
-#     Name = "${lookup(var.node1-ubuntu, "name_tag")}"
-#   }
-#   key_name = "${var.key_name}"
-
-#   connection {
-#     host     = "${aws_instance.node1-ubuntu.public_ip}"
-#     user     = "ubuntu"
-#     key_file = "${var.ssh_key_file}"
-#   }
-
-#   provisioner "file" {
-#     content = "${data.template_file.data_collector.rendered}"
-#     destination = "/tmp/data_collector.rb"
-#   }
-
-#   provisioner "remote-exec" {
-#     inline = [
-#       "sudo mkdir -p /etc/chef/trusted_certs",
-#       "sudo chmod 0777 /etc/chef/trusted_certs",
-#       "sudo mkdir -p /etc/chef/client.d",
-#       "sudo cp /tmp/data_collector.rb /etc/chef/client.d/data_collector.rb"
-#     ]
-#   }
-# }
+resource "aws_instance" "node1-ubuntu" {
+  ami = "${lookup(var.node1-ubuntu, "ami")}"
+  availability_zone = "${var.region}${var.availability_zone}"
+  instance_type = "${lookup(var.node1-ubuntu, "instance_type")}"
+  security_groups = ["${aws_security_group.linux_sg.name}"]
+  associate_public_ip_address = true
+  tags {
+    Name = "${lookup(var.node1-ubuntu, "name_tag")}"
+  }
+  key_name = "${var.key_name}"
+}
 
 # Windows node
-# resource "aws_instance" "node1-windows" {
-#   ami = "${lookup(var.node1-windows, "ami")}"
-#   availability_zone = "${var.region}${var.availability_zone}"
-#   instance_type = "${lookup(var.node1-windows, "instance_type")}"
-#   security_groups = ["${aws_security_group.windows_webserver.name}"]
-#   associate_public_ip_address = true
-#   tags {
-#     Name = "${lookup(var.node1-windows, "name_tag")}"
-#   }
-#   key_name = "${var.key_name}"
-#   lifecycle {
-#     ignore_changes = [
-#       "ebs_block_device"
-#     ]
-#   }
+resource "aws_instance" "node1-windows" {
+  ami = "${lookup(var.node1-windows, "ami")}"
+  availability_zone = "${var.region}${var.availability_zone}"
+   instance_type = "${lookup(var.node1-windows, "instance_type")}"
+   security_groups = ["${aws_security_group.windows_webserver.name}"]
+   associate_public_ip_address = true
+   tags {
+     Name = "${lookup(var.node1-windows, "name_tag")}"
+   }
+   key_name = "${var.key_name}"
+   lifecycle {
+     ignore_changes = [
+       "ebs_block_device"
+     ]
+   }
 
-#   user_data = <<EOF
-# <powershell>
-# # turn off PowerShell execution policy restrictions
-# Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope LocalMachine -Force
+   user_data = <<EOF
+<powershell>
+# turn off PowerShell execution policy restrictions
+Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope LocalMachine -Force
 
-# Get-NetFirewallPortFilter | ?{$_.LocalPort -eq 5985 } | Get-NetFirewallRule | ?{ $_.Direction -eq "Inbound" -and $_.Profile -eq "Public" -and $_.Action -eq "Allow"} | Set-NetFirewallRule -RemoteAddress "Any"
+Get-NetFirewallPortFilter | ?{$_.LocalPort -eq 5985 } | Get-NetFirewallRule | ?{ $_.Direction -eq "Inbound" -and $_.Profile -eq "Public" -and $_.Action -eq "Allow"} | Set-NetFirewallRule -RemoteAddress "Any"
 
-# $admin = [adsi]("WinNT://./administrator, user")
-# $admin.psbase.invoke("SetPassword", "${var.windows_password}")
+$admin = [adsi]("WinNT://./administrator, user")
+$admin.psbase.invoke("SetPassword", "${var.windows_password}")
 
-# New-Item -ItemType directory -Path C:\Temp
-
-# New-Item C:\chef\client.d -ItemType Directory -Force
-# Set-Content -Path "C:\chef\client.d\data_collector.rb" @"
-# ${data.template_file.data_collector.rendered}
-# "@
-# </powershell>
-# EOF
-# }
+</powershell>
+EOF
+}
 
 # workstation
 resource "aws_instance" "workstation" {
@@ -337,8 +283,8 @@ resource "aws_instance" "workstation" {
   }
 
   provisioner "file" {
-    source = "secrets/download.zip"
-    destination = "~/Downloads/download.zip"
+    source = "secrets/starter_kit.zip"
+    destination = "~/Downloads/starter_kit.zip"
   }
 
   provisioner "file" {
@@ -365,6 +311,22 @@ resource "aws_instance" "workstation" {
         "identity_file": "~/.ssh/private_key",
         "ip_address": "${aws_instance.node1-centos.public_ip}",
         "cookbook": "learn_chef_httpd"
+      },
+      {
+        "name": "node1-ubuntu",
+        "platform": "ubuntu",
+        "ssh_user": "ubuntu",
+        "identity_file": "~/.ssh/private_key",
+        "ip_address": "${aws_instance.node1-ubuntu.public_ip}",
+        "cookbook": "learn_chef_apache2"
+      },
+      {
+        "name": "node1-windows",
+        "platform": "windows",
+        "winrm_user": "Administrator",
+        "password": "${var.windows_password}",
+        "ip_address": "${aws_instance.node1-windows.public_ip}",
+        "cookbook": "learn_chef_iis"
       }
     ],
     "products": {
@@ -388,6 +350,14 @@ resource "aws_instance" "workstation" {
           "rhel": {
             "ami_id": "${lookup(var.node1-centos, "ami")}",
             "instance_type": "${lookup(var.node1-centos, "instance_type")}"
+          },
+          "ubuntu": {
+            "ami_id": "${lookup(var.node1-ubuntu, "ami")}",
+            "instance_type": "${lookup(var.node1-ubuntu, "instance_type")}"
+          },
+          "windows": {
+            "ami_id": "${lookup(var.node1-windows, "ami")}",
+            "instance_type": "${lookup(var.node1-windows, "instance_type")}"
           }
         }
       }

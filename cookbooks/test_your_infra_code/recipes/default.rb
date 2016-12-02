@@ -28,11 +28,11 @@ with_snippet_options(snippet_options) do
 snippet_config 'test-your-infrastructure-code'
 
 include_recipe 'test_your_infra_code::prerequisites'
-# include_recipe 'test_your_infra_code::verify-desired-state'
-# include_recipe 'test_your_infra_code::verify-resources-defined'
-# include_recipe 'test_your_infra_code::verify-style-guide'
-# include_recipe 'test_your_infra_code::exercise-email'
-# include_recipe 'test_your_infra_code::refactor-web-app'
+include_recipe 'test_your_infra_code::verify-desired-state'
+include_recipe 'test_your_infra_code::verify-resources-defined'
+include_recipe 'test_your_infra_code::verify-style-guide'
+include_recipe 'test_your_infra_code::exercise-email'
+include_recipe 'test_your_infra_code::refactor-web-app'
 include_recipe 'test_your_infra_code::create-custom-resource'
 
 end

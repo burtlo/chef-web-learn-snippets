@@ -1,5 +1,5 @@
 This tutorial was last tested with this configuration:
 
-* An Ubuntu 14.04 workstation, Vagrant <%= node['products']['versions']['vagrant']['ubuntu'] %>, VirtualBox <%= node['products']['versions']['virtualbox']['ubuntu'] %>
+* An Ubuntu 14.04 workstation, Vagrant <%= node['products']['versions']['vagrant']['ubuntu'] %>, VirtualBox <%= node['products']['versions']['virtualbox']['ubuntu'] %>, Chef Development Kit <%= node['products']['versions']['chefdk']['ubuntu'].split('-')[1] %>.
 * Chef server <%= node['products']['versions']['chef_server']['ubuntu'].split('-')[1] %> on Ubuntu 14.04 running on VirtualBox.
 * A node running <%= @node_display_name %> on VirtualBox, Chef client <%= @chef_client_version %>.

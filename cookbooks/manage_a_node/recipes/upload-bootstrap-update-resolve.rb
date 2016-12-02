@@ -6,6 +6,7 @@
 
 node.run_state['bootstrap_command'] = {}
 node.run_state['knife_ssh_command'] = {}
+node.run_state['knife_ssh_role_command'] = {}
 
 # Ensure cookbooks do not exist locally.
 directory ::File.expand_path('~/learn-chef/cookbooks') do
@@ -187,15 +188,23 @@ EOH
     only_if "knife client list --config ~/learn-chef/.chef/knife.rb | grep #{node_name}"
   end
 
+  # Ensure Berks cache is empty.
+  directory "ensure-berks-cache-empty-#{node_name}" do
+    path ::File.expand_path('~/.berkshelf')
+    action :delete
+    recursive true
+  end
+
   directory ::File.expand_path('~/.ssh')
 
   # Upload cookbook
   ##################
 
-  # Ensure no versions of this cookbook are on the Chef server.
+  # Ensure the Chef server is clear of any prior cookbooks.
   execute "ensure-knife-cookbook-delete-#{cookbook}" do
-    command "knife cookbook delete #{cookbook} --all --yes --config ~/learn-chef/.chef/knife.rb"
-    only_if "knife cookbook list --config ~/learn-chef/.chef/knife.rb | grep #{cookbook}"
+    command 'knife cookbook bulk delete . --purge --yes --config ~/learn-chef/.chef/knife.rb'
+    #command "knife cookbook delete #{cookbook} --all --yes --config ~/learn-chef/.chef/knife.rb"
+    #only_if "knife cookbook list --config ~/learn-chef/.chef/knife.rb | grep #{cookbook}"
   end
 
   with_snippet_options(platform: node_platform, lesson: 'upload-a-cookbook', cwd: '~/learn-chef')
@@ -287,6 +296,8 @@ EOH
         command lazy { node.run_state['bootstrap_command'][node_platform] }
         remove_lines_matching [/locale/, /#########/, /Reading database/]
         not_if "knife node list --config ~/learn-chef/.chef/knife.rb | grep #{node_name}"
+        retries 10
+        retry_delay 60
       end
 
       snippet_execute "knife-node-list-#{node_name}" do
@@ -336,13 +347,14 @@ EOH
         not_if "knife cookbook list --config ~/learn-chef/.chef/knife.rb | grep #{cookbook} | grep 0.2.0"
       end
 
+      # Form up `knife ssh` (or `knife winrm`) command.
       case node_platform
       when 'windows'
-        node.run_state['knife_ssh_command'][node_platform] = "knife winrm #{ip_address} chef-client --manual-list --winrm-user #{n['winrm_user']} --winrm-password '#{n['password']}'"
+        node.run_state['knife_ssh_command'][node_platform] = "knife winrm 'name:#{node_name}' chef-client --winrm-user #{n['winrm_user']} --winrm-password '#{n['password']}' --attribute ipaddress"
       else
         case node['snippets']['virtualization']
         when 'hosted', 'aws-automate', 'aws-marketplace', 'azure-marketplace', 'opsworks'
-          node.run_state['knife_ssh_command'][node_platform]  = "knife ssh #{ip_address} 'sudo chef-client' --manual-list --ssh-user #{n['ssh_user']} --identity-file #{n['identity_file']}"
+          node.run_state['knife_ssh_command'][node_platform]  = "knife ssh 'name:#{node_name}' 'sudo chef-client' --ssh-user #{n['ssh_user']} --identity-file #{n['identity_file']} --attribute ipaddress"
         when 'virtualbox'
           ruby_block "vagrant-ssh-config-#{node_name}-2" do
             block do
@@ -352,9 +364,16 @@ EOH
               identity_file = lines.grep(/\s*IdentityFile\s+(.*)$/){$1}[0]
 
               node.run_state['knife_ssh_command'][node_platform] = "knife ssh localhost --ssh-port #{port} 'sudo chef-client' --manual-list --ssh-user #{user} --identity-file #{identity_file}"
+              node.run_state['knife_ssh_role_command'][node_platform] = node.run_state['knife_ssh_command'][node_platform]
             end
           end
         end
+      end
+
+      # Form up the command we'll use later once we switch over to roles.
+      # Replace 'name:' with 'role:' and the node name with 'web'.
+      if node['snippets']['virtualization'] != 'virtualbox'
+        node.run_state['knife_ssh_role_command'][node_platform] = node.run_state['knife_ssh_command'][node_platform].sub('name:', 'role:').sub(node_name, 'web')
       end
 
       # knife ssh
@@ -443,6 +462,147 @@ EOH
       end
 
     end
+  end
+
+  # Run chef-client periodically
+  ##################
+
+  with_snippet_options(platform: node_platform, lesson: 'run-chef-client-periodically') do
+
+    # Ensure role doesn't exist locally or on the Chef server.
+    execute "ensure-role-delete-#{node_name}" do
+      command "knife role delete web --config ~/learn-chef/.chef/knife.rb --yes"
+      only_if "knife role list --config ~/learn-chef/.chef/knife.rb | grep web"
+    end
+    file "ensure-role-file-delete-#{node_name}" do
+      path ::File.expand_path('~/learn-chef/roles/web.json')
+      action :delete
+    end
+
+    with_snippet_options(step: 'get-chef-client-cookbook', cwd: '~/learn-chef') do
+
+      # cd ~/learn-chef
+      snippet_execute "cd-learn-chef-#{node_name}-2" do
+        command 'cd ~/learn-chef'
+        cwd '~'
+      end
+
+      # TODO:
+      # ENV['SSL_CERT_FILE'] ||= File.join(File.dirname(File.expand_path(__FILE__)), ".chef/ca_certs/opsworks-cm-ca-2016-root.pem")
+      # Write Berksfile
+      snippet_code_block "berksfile-#{cookbook}" do
+        file_path '~/learn-chef/Berksfile'
+        content <<-EOH
+source 'https://supermarket.chef.io'
+cookbook 'chef-client'
+EOH
+      end
+
+      # berks install
+      snippet_execute "berks-install-chef-client-#{node_name}" do
+        command 'berks install'
+      end
+
+      # List the cookbooks we downloaded.
+      snippet_execute "ls-dot-berkshelf-cookbooks-#{node_name}" do
+        command 'ls ~/.berkshelf/cookbooks'
+      end
+
+      # berks upload
+      if node['snippets']['virtualization'] == 'opsworks'
+        snippet_execute "berks-upload-chef-client-#{node_name}" do
+          command "SSL_CERT_FILE='.chef/ca_certs/opsworks-cm-ca-2016-root.pem' berks upload"
+        end
+      elsif node['snippets']['virtualization'] == 'virtualbox'
+        snippet_execute "berks-upload-chef-client-#{node_name}" do
+          command "SSL_CERT_FILE='.chef/trusted_certs/chef-server_test.crt' berks upload"
+        end
+      elsif node['snippets']['virtualization'] == 'hosted'
+        snippet_execute "berks-upload-chef-client-#{node_name}" do
+          command 'berks upload'
+        end
+      else
+        snippet_execute "berks-upload-chef-client-#{node_name}" do
+          command 'berks upload --no-ssl-verify'
+        end
+      end
+    end
+
+    with_snippet_options(step: 'create-a-role', cwd: '~/learn-chef') do
+
+      # Render template role .erb to /tmp.
+      template "/tmp/web-#{node_name}.json" do
+        source 'web.json.erb'
+        variables({
+          :cookbook => cookbook
+        })
+      end
+
+      # Write role file.
+      snippet_code_block "web-role-#{node_platform}" do
+        file_path '~/learn-chef/roles/web.json'
+        content lazy { ::File.read("/tmp/web-#{node_name}.json") }
+      end
+
+      # knife role from file roles/web.json
+      snippet_execute "knife-role-from-file-#{node_name}" do
+        command 'knife role from file roles/web.json'
+      end
+
+      # knife role list
+      snippet_execute "knife-role-list-#{node_name}" do
+        command 'knife role list'
+      end
+
+      # knife role show web
+      snippet_execute "knife-role-show-web-#{node_name}" do
+        command 'knife role show web'
+      end
+
+      # knife node run_list set node1-centos "role[web]"
+      snippet_execute "knife-node-run_list-set-#{node_name}" do
+        command "knife node run_list set #{node_name} \"role[web]\""
+      end
+
+      # knife node show node1-centos --run-list
+      snippet_execute "knife-node-show-run_list-#{node_name}" do
+        command "knife node show #{node_name} --run-list"
+      end
+
+    end
+
+    with_snippet_options(step: 'run-chef-client', cwd: '~/learn-chef') do
+
+      # Do a CCR
+      snippet_execute "knife-ccr-#{node_name}-4" do
+        command lazy { node.run_state['knife_ssh_role_command'][node_platform] }
+        remove_lines_matching [/locale/, /#########/]
+      end
+
+      # Unless we're working with Chef Automate, wait a few minutes for the node to
+      # do a CCR.
+      unless %w(aws-automate opsworks).include?(node['snippets']['virtualization'])
+        ruby_block "spin-wait-ccr-#{node_name}" do
+          block do
+            print 'Waiting 7 minutes while the node checks in...'
+            7.times do
+              print '.'
+              sleep(60)
+            end
+            puts 'done'
+          end
+        end
+      end
+
+      # Get node status.
+      snippet_execute "knife-status-#{node_name}" do
+        command "knife status 'role:web' --run-list"
+      end
+
+    end
+  end
+
+  with_snippet_options(platform: node_platform, lesson: 'cleaning-up') do
 
     with_snippet_options(step: 'cleaning-up', cwd: '~/learn-chef') do
 
@@ -465,6 +625,12 @@ EOH
 
       snippet_execute "knife-cookbook-delete-#{cookbook}" do
         command "knife cookbook delete #{cookbook} --all --yes"
+      end
+
+      # Delete the web role.
+      snippet_execute "knife-role-delete-web-#{node_name}" do
+        command 'knife role delete web --yes'
+        only_if "knife role list --config ~/learn-chef/.chef/knife.rb | grep web"
       end
 
       # Destroy VM
