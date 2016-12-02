@@ -21,13 +21,15 @@ with_snippet_options(lesson: 'set-up-your-workstation', shell: shell) do
 
   with_snippet_options(cwd: '~', step: 'set-up-your-working-directory') do
 
-    snippet_execute 'mkdir-learn-chef' do
-      command 'mkdir ~/learn-chef'
-      not_if 'stat ~/learn-chef'
-    end
+    unless node['snippets']['virtualization'] == 'opsworks'
+      snippet_execute 'mkdir-learn-chef' do
+        command 'mkdir ~/learn-chef'
+        not_if 'stat ~/learn-chef'
+      end
 
-    snippet_execute 'cd-learn-chef' do
-      command 'cd ~/learn-chef'
+      snippet_execute 'cd-learn-chef' do
+        command 'cd ~/learn-chef'
+      end
     end
 
   end

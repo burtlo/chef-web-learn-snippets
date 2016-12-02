@@ -3,14 +3,14 @@
 ### https://github.com/hashicorp/terraform/issues/8843
 ### For now:
 ### 1. Spin up Chef server (25 node license) manually
-### 2. Name it chef-server-azure-2
-### 3. Assign DNS chef-server-azure-2.eastus.cloudapp.azure.com
+### 2. Name it chef-server-azure-3
+### 3. Assign DNS chef-server-azure-3.eastus.cloudapp.azure.com
 ### 4. Run these commands on the Chef server
 ### $ mkdir ~/drop
 ### $ until tail /var/log/cloud-init-output.log | grep 'finished at'; do sleep 1m; done;
 ### $ sudo rm /var/opt/opscode/nginx/etc/nginx.d/analytics.conf
-### $ echo 'api_fqdn "chef-server-azure-2.eastus.cloudapp.azure.com"' | sudo tee -a /etc/chef-marketplace/marketplace.rb
-### $ sudo chef-marketplace-ctl hostname chef-server-azure-2.eastus.cloudapp.azure.com
+### $ echo 'api_fqdn "chef-server-azure-3.eastus.cloudapp.azure.com"' | sudo tee -a /etc/chef-marketplace/marketplace.rb
+### $ sudo chef-marketplace-ctl hostname chef-server-azure-3.eastus.cloudapp.azure.com
 ### $ sudo opscode-analytics-ctl reconfigure
 ### $ sudo chef-server-ctl user-create admin Bob Admin admin@4thcoffee.com insecurepassword --filename ~/drop/admin.pem
 ### $ sudo chef-server-ctl org-create 4thcoffee "Fourth Coffee, Inc." --association_user admin --filename 4thcoffee-validator.pem
@@ -19,7 +19,7 @@
 
 # WORKAROUND
 variable "chef_server_fqdn" {
-  default = "chef-server-azure-2.eastus.cloudapp.azure.com"
+  default = "chef-server-azure-3.eastus.cloudapp.azure.com"
 }
 
 variable "subscription_id" {}

@@ -6,20 +6,6 @@ Vagrant.configure(2) do |config|
 
   config.vm.box = "bento/ubuntu-14.04"
 
-  config.vm.define "node1-centos" do |cs|
-    cs.vm.box = "bento/centos-7.2"
-    cs.vm.hostname = "node1-centos"
-    #cs.vm.network "private_network", ip: "192.168.145.134"
-    cs.vm.provision "shell", path: "../../shared/scripts/report_ip_address.sh"
-  end
-
-  config.vm.define "node1-ubuntu" do |cs|
-    cs.vm.box = "boxcutter/ubuntu1404" #"bento/ubuntu-14.04"
-    cs.vm.hostname = "node1-ubuntu"
-    #cs.vm.network "private_network", ip: "192.168.145.135"
-    cs.vm.provision "shell", path: "../../shared/scripts/report_ip_address.sh"
-  end
-
   config.vm.define "node1-windows" do |cs|
     cs.vm.box = "opentable/win-2012r2-standard-amd64-nocm"
     cs.vm.guest = :windows
@@ -35,7 +21,7 @@ Vagrant.configure(2) do |config|
   end
 
   config.vm.define "workstation-ubuntu" do |cs|
-    cs.vm.box = "boxcutter/ubuntu1404" #"bento/ubuntu-14.04"
+    cs.vm.box = "bento/ubuntu-14.04"
     cs.vm.hostname = "workstation-ubuntu"
     cs.vm.network "private_network", ip: "192.168.145.132"
 
@@ -55,22 +41,6 @@ Vagrant.configure(2) do |config|
           "virtualization" => "hosted"
         },
         "nodes" => [
-          {
-            "name" => "node1-centos",
-            "platform" => "rhel",
-            "ssh_user" => "vagrant",
-            "identity_file" => "~/.ssh/private_key",
-            "ip_address" => "192.168.145.134",
-            "cookbook" => "learn_chef_httpd"
-          },
-          {
-            "name" => "node1-ubuntu",
-            "platform" => "ubuntu",
-            "ssh_user" => "vagrant",
-            "identity_file" => "~/.ssh/private_key",
-            "ip_address" => "192.168.145.135",
-            "cookbook" => "learn_chef_apache2"
-          },
           {
             "name" => "node1-windows",
             "platform" => "windows",

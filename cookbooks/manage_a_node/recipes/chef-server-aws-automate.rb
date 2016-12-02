@@ -117,12 +117,12 @@ with_snippet_options(lesson: 'set-up-your-chef-server', cwd: '~') do
 
   # We'll later need to copy Automate's server certificate to our nodes.
   # Grab the cert now.
-  with_snippet_options(step: 'copy-server-certificate') do
-    snippet_execute 'download-automate-certificate-to-workstation' do
-      command "scp -i ~/.ssh/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@#{chef_automate_fqdn}:/var/opt/delivery/nginx/ca/#{cert_name} /tmp/#{cert_name}"
-      not_if 'stat /tmp/chef-automate.installed' # only do this once
-    end
-  end
+  # with_snippet_options(step: 'copy-server-certificate') do
+  #   snippet_execute 'download-automate-certificate-to-workstation' do
+  #     command "scp -i ~/.ssh/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@#{chef_automate_fqdn}:/var/opt/delivery/nginx/ca/#{cert_name} /tmp/#{cert_name}"
+  #     not_if 'stat /tmp/chef-automate.installed' # only do this once
+  #   end
+  # end
 
   # Set up data collector on Chef server
   # First, render it locally
@@ -156,40 +156,41 @@ with_snippet_options(lesson: 'set-up-your-chef-server', cwd: '~') do
   file '/tmp/chef-automate.installed' # mark Chef Automate as installed
 
 end
-with_snippet_options(lesson: 'get-a-node-to-bootstrap', step: 'copy-server-certificate', cwd: '~') do
-  # Copy cert from Chef Automate to nodes
-  node['nodes'].each do |n|
-    node_name = n['name']
-    ip_address = n['ip_address']
-    username = n['ssh_user'] || n['winrm_user']
 
-    case n['platform']
-    when 'rhel', 'ubuntu'
-      snippet_execute "upload-automate-certificate-to-#{node_name}" do
-        command "scp -i #{n['identity_file']} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /tmp/#{cert_name} #{username}@#{ip_address}:/etc/chef/trusted_certs"
-      end
-    when 'windows'
-      template '/tmp/upload-cert.rb' do
-        source 'upload-cert.rb.erb'
-        variables({
-          :ip_address => ip_address,
-          :username => username,
-          :password => n['password'],
-          :cert_file => cert_name
-        })
-      end
-      snippet_code_block "upload-cert-rb" do
-        file_path "/tmp/upload-cert.rb"
-        content lazy {
-          ::File.read(::File.expand_path("/tmp/upload-cert.rb"))
-        }
-      end
-      snippet_execute "upload-automate-certificate-to-#{node_name}" do
-        command "chef exec ruby /tmp/upload-cert.rb"
-      end
-    end
-  end
-end
+# with_snippet_options(lesson: 'get-a-node-to-bootstrap', step: 'copy-server-certificate', cwd: '~') do
+#   # Copy cert from Chef Automate to nodes
+#   node['nodes'].each do |n|
+#     node_name = n['name']
+#     ip_address = n['ip_address']
+#     username = n['ssh_user'] || n['winrm_user']
+#
+#     case n['platform']
+#     when 'rhel', 'ubuntu'
+#       snippet_execute "upload-automate-certificate-to-#{node_name}" do
+#         command "scp -i #{n['identity_file']} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /tmp/#{cert_name} #{username}@#{ip_address}:/etc/chef/trusted_certs"
+#       end
+#     when 'windows'
+#       template '/tmp/upload-cert.rb' do
+#         source 'upload-cert.rb.erb'
+#         variables({
+#           :ip_address => ip_address,
+#           :username => username,
+#           :password => n['password'],
+#           :cert_file => cert_name
+#         })
+#       end
+#       snippet_code_block "upload-cert-rb" do
+#         file_path "/tmp/upload-cert.rb"
+#         content lazy {
+#           ::File.read(::File.expand_path("/tmp/upload-cert.rb"))
+#         }
+#       end
+#       snippet_execute "upload-automate-certificate-to-#{node_name}" do
+#         command "chef exec ruby /tmp/upload-cert.rb"
+#       end
+#     end
+#   end
+# end
 
 ##################
 

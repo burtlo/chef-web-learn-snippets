@@ -3,6 +3,21 @@ variable "aws_secret_key" {}
 variable "key_name" {}
 variable "ssh_key_file" {}
 
+###
+### TODO: Manually create an OpsWorks stack and update these values.
+### TODO: Also remember to copy starter_kit.zip to the secrets directory.
+###
+variable "chef_automate" {
+  type = "map"
+  default = {
+    fqdn = "test-xcdbs22xaaf3cmpz.gamma.opsworks-cm.io"
+    version = "12.11.1"
+    instance_type = "t2.medium"
+  }
+}
+###
+###
+
 variable "chef_client_channel" {
   default = "stable"
 }
@@ -13,26 +28,6 @@ variable "chef_client_version" {
 
 variable "chef_server_channel" {
   default = "stable"
-}
-
-variable "chef_server_version" {
-  default = "12.11.1"
-}
-
-variable push_jobs_channel {
-  default = "stable"
-}
-
-variable push_jobs_version {
-  default = "1.1.6"
-}
-
-variable delivery_channel {
-  default = "stable"
-}
-
-variable delivery_version {
-  default = "0.6.7"
 }
 
 # Configure the AWS Provider
@@ -48,24 +43,6 @@ variable "region" {
 
 variable "availability_zone" {
   default = "b"
-}
-
-variable "chef_automate" {
-  type = "map"
-  default = {
-    ami = "ami-2d39803a" # Ubuntu 14.04
-    instance_type = "t2.large"
-    name_tag = "chef-automate"
-  }
-}
-
-variable "chef_server" {
-  type = "map"
-  default = {
-    ami = "ami-2d39803a" # Ubuntu 14.04
-    instance_type = "t2.large"
-    name_tag = "chef-server"
-  }
 }
 
 variable "node1-centos" {
@@ -84,7 +61,7 @@ variable "windows_password" {
 variable "node1-windows" {
   type = "map"
   default = {
-    ami = "ami-ee7805f9" # Windows Server 2012 R2
+    ami = "ami-3f0c4628" # Windows Server 2012 R2
     instance_type = "t2.medium"
     name_tag = "node1-windows"
   }
@@ -105,50 +82,6 @@ variable "workstation" {
     ami = "ami-2d39803a" # Ubuntu 14.04
     instance_type = "t2.micro"
     name_tag = "workstation"
-  }
-}
-
-resource "aws_security_group" "chef_server" {
-  name = "chef_server"
-  description = "Rules for Chef server"
-
-  # Push Jobs
-  ingress {
-      from_port = 10000
-      to_port = 10003
-      protocol = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # SSH
-  ingress {
-      from_port = 22
-      to_port = 22
-      protocol = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # HTTP
-  ingress {
-      from_port = 80
-      to_port = 80
-      protocol = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # HTTPS
-  ingress {
-      from_port = 443
-      to_port = 443
-      protocol = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port = 0
-    to_port = 0
-    protocol = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
   }
 }
 
@@ -188,51 +121,6 @@ resource "aws_security_group" "windows_webserver" {
   }
 
   # outbound internet access
-  egress {
-    from_port = 0
-    to_port = 0
-    protocol = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
-
-
-resource "aws_security_group" "chef_automate" {
-  name = "chef_automate"
-  description = "Rules for Chef Automate"
-
-  # Delivery Git (SCM)
-  ingress {
-      from_port = 8989
-      to_port = 8989
-      protocol = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # SSH
-  ingress {
-      from_port = 22
-      to_port = 22
-      protocol = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # HTTP
-  ingress {
-      from_port = 80
-      to_port = 80
-      protocol = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # HTTPS
-  ingress {
-      from_port = 443
-      to_port = 443
-      protocol = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-  }
-
   egress {
     from_port = 0
     to_port = 0
@@ -297,41 +185,6 @@ resource "aws_security_group" "workstation" {
   }
 }
 
-# Chef server
-resource "aws_instance" "chef_server" {
-  ami = "${lookup(var.chef_server, "ami")}"
-  availability_zone = "${var.region}${var.availability_zone}"
-  instance_type = "${lookup(var.chef_server, "instance_type")}"
-  security_groups = ["${aws_security_group.chef_server.name}"]
-  associate_public_ip_address = true
-  tags {
-    Name = "${lookup(var.chef_server, "name_tag")}"
-  }
-  key_name = "${var.key_name}"
-  user_data = <<EOF
-#!/bin/bash
-echo $(curl -s http://169.254.169.254/latest/meta-data/public-hostname) | xargs sudo hostname
-EOF
-}
-
-# Chef Automate
-resource "aws_instance" "chef_automate" {
-  ami = "${lookup(var.chef_automate, "ami")}"
-  availability_zone = "${var.region}${var.availability_zone}"
-  instance_type = "${lookup(var.chef_automate, "instance_type")}"
-  security_groups = ["${aws_security_group.chef_automate.name}"]
-  associate_public_ip_address = true
-  tags {
-    Name = "${lookup(var.chef_automate, "name_tag")}"
-  }
-  key_name = "${var.key_name}"
-  user_data = <<EOF
-#!/bin/bash
-echo $(curl -s http://169.254.169.254/latest/meta-data/public-hostname) | xargs sudo hostname
-EOF
-
-}
-
 # node1-centos
 resource "aws_instance" "node1-centos" {
   ami = "${lookup(var.node1-centos, "ami")}"
@@ -362,20 +215,20 @@ resource "aws_instance" "node1-ubuntu" {
 resource "aws_instance" "node1-windows" {
   ami = "${lookup(var.node1-windows, "ami")}"
   availability_zone = "${var.region}${var.availability_zone}"
-  instance_type = "${lookup(var.node1-windows, "instance_type")}"
-  security_groups = ["${aws_security_group.windows_webserver.name}"]
-  associate_public_ip_address = true
-  tags {
-    Name = "${lookup(var.node1-windows, "name_tag")}"
-  }
-  key_name = "${var.key_name}"
-  lifecycle {
-    ignore_changes = [
-      "ebs_block_device"
-    ]
-  }
+   instance_type = "${lookup(var.node1-windows, "instance_type")}"
+   security_groups = ["${aws_security_group.windows_webserver.name}"]
+   associate_public_ip_address = true
+   tags {
+     Name = "${lookup(var.node1-windows, "name_tag")}"
+   }
+   key_name = "${var.key_name}"
+   lifecycle {
+     ignore_changes = [
+       "ebs_block_device"
+     ]
+   }
 
-  user_data = <<EOF
+   user_data = <<EOF
 <powershell>
 # turn off PowerShell execution policy restrictions
 Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope LocalMachine -Force
@@ -420,11 +273,6 @@ resource "aws_instance" "workstation" {
   }
 
   provisioner "file" {
-    source = "secrets/automate.license"
-    destination = "~/Downloads/automate.license"
-  }
-
-  provisioner "file" {
     source = "vendored-cookbooks"
     destination = "/tmp"
   }
@@ -435,20 +283,25 @@ resource "aws_instance" "workstation" {
   }
 
   provisioner "file" {
+    source = "secrets/starter_kit.zip"
+    destination = "~/Downloads/starter_kit.zip"
+  }
+
+  provisioner "file" {
       content = <<EOF
   {
     "run_list": [
       "recipe[manage_a_node]"
     ],
     "snippets": {
-      "virtualization": "aws-automate"
+      "virtualization": "opsworks"
     },
     "chef_server": {
-      "fqdn": "${aws_instance.chef_server.public_dns}",
-      "org": "4thcoffee"
+      "fqdn": "${lookup(var.chef_automate, "fqdn")}",
+      "org": "default"
     },
     "chef_automate": {
-      "fqdn": "${aws_instance.chef_automate.public_dns}"
+      "fqdn": "${lookup(var.chef_automate, "fqdn")}"
     },
     "nodes": [
       {
@@ -479,10 +332,7 @@ resource "aws_instance" "workstation" {
     "products": {
       "versions": {
         "automate": {
-          "ubuntu": "${var.delivery_channel}-${var.delivery_version}"
-        },
-        "chef_server": {
-          "ubuntu": "${var.chef_server_channel}-${var.chef_server_version}"
+          "amazon-linux": "${lookup(var.chef_automate, "version")}"
         }
       }
     },
@@ -490,12 +340,7 @@ resource "aws_instance" "workstation" {
       "aws": {
         "region": "${var.region}",
         "automate": {
-          "ami_id": "${lookup(var.chef_automate, "ami")}",
           "instance_type": "${lookup(var.chef_automate, "instance_type")}"
-        },
-        "chef_server": {
-          "ami_id": "${lookup(var.chef_server, "ami")}",
-          "instance_type": "${lookup(var.chef_server, "instance_type")}"
         },
         "workstation": {
           "ami_id": "${lookup(var.workstation, "ami")}",
@@ -532,10 +377,6 @@ resource "aws_instance" "workstation" {
 
 output "ip_address" {
   value = "${aws_instance.workstation.public_ip}"
-}
-
-output "chef_server_ip_address" {
-  value = "${aws_instance.chef_server.public_ip}"
 }
 
 output "admin_username" {

@@ -187,6 +187,9 @@ def translate_command
   elsif command =~ /knife/
     # Not sure why, but from shell_out, knife.rb isn't found unless you specify the config file path.
     command + " --config ~/learn-chef/.chef/knife.rb --no-color"
+  elsif command == 'berks upload'
+    # TODO: 11/29/16: Need to figure out why, but can only connect to hosted Chef when I do this... :/
+    'BERKSHELF_DEBUG=1 berks upload'
   else
     command
   end

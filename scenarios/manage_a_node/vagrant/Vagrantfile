@@ -3,7 +3,7 @@
 # vi: set ft=ruby :
 
 chef_version = "stable-12.12.15"
-chef_server_version = 'stable-12.9.1'
+chef_server_version = 'stable-12.11.1'
 
 # CHEF_SERVER_SCRIPT = <<EOF.freeze
 # # install chef server
