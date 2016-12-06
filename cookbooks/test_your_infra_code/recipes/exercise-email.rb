@@ -4,7 +4,7 @@
 #
 # Copyright (c) 2016 The Authors, All Rights Reserved.
 
-default_test = '~/learn-chef/cookbooks/email/test/recipes/default/default_test.rb'
+default_test = '~/learn-chef/cookbooks/email/test/recipes/default_test.rb'
 default_recipe = '~/learn-chef/cookbooks/email/recipes/default.rb'
 kitchen_yml = '~/learn-chef/cookbooks/email/.kitchen.yml'
 metadata_rb = '~/learn-chef/cookbooks/email/metadata.rb'
