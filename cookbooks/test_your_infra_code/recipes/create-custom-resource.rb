@@ -116,8 +116,8 @@ with_snippet_options(step: 'testing-the-custom_web_site-resource', cwd: '~/learn
 
   # However, this version also verifies the configuration on CentOS and Ubuntu
   snippet_code_block 'hello_world_test-default-test-rb' do
-    file_path '~/learn-chef/cookbooks/custom_web/test/recipes/default/default_spec.rb'
-    content lazy { ::File.read(::File.expand_path('~/learn-chef/cookbooks/custom_web/test/recipes/default/default_spec.rb')) }
+    file_path '~/learn-chef/cookbooks/custom_web/test/recipes/default_test.rb'
+    content lazy { ::File.read(::File.expand_path('~/learn-chef/cookbooks/custom_web/test/recipes/default_test.rb')) }
   end
 
 end
