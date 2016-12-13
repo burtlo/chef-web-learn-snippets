@@ -77,6 +77,9 @@ with_snippet_options(
     when 'windows'
       kitchen_exec_verify_service = '(Invoke-WebRequest -UseBasicParsing localhost).Content'
       kitchen_exec_verify_owner = 'Get-Acl c:\inetpub\wwwroot\Default.htm | Format-List'
+    when 'ubuntu'
+      kitchen_exec_verify_service = 'wget -qO- localhost'
+      kitchen_exec_verify_owner = 'stat /var/www/html/index.html'
     else
       kitchen_exec_verify_service = 'curl localhost'
       kitchen_exec_verify_owner = 'stat /var/www/html/index.html'
