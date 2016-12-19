@@ -11,3 +11,5 @@ crash.log
 compliance_api_data
 *ipaddress.txt
 *.version
+*.vhdx
+Virtual Machines
