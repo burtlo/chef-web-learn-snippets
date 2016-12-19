@@ -60,7 +60,7 @@ variable "node1_ubuntu" {
 variable "node1_windows" {
   type = "map"
   default = {
-    ami = "ami-ee7805f9" # Windows Server 2012 R2
+    ami = "ami-bfeddca8" # Windows Server 2012 R2
     instance_type = "t2.medium"
     name_tag = "node1-windows"
   }
