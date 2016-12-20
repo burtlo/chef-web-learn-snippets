@@ -1,0 +1,11 @@
+do_download() {
+  return 0
+}
+
+do_verify() {
+  return 0
+}
+
+do_unpack() {
+  return 0
+}
