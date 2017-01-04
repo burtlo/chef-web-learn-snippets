@@ -4,7 +4,7 @@
 #
 # Copyright (c) 2016 The Authors, All Rights Reserved.
 
-default_test = '~/learn-chef/cookbooks/webserver_test/test/recipes/default_test.rb'
+default_test = '~/learn-chef/cookbooks/webserver_test/test/smoke/default/default_test.rb'
 
 default_recipe = '~/learn-chef/cookbooks/webserver_test/recipes/default.rb'
 
