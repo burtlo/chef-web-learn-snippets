@@ -1,0 +1,44 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+chef_version = "stable-12.12.15"
+hab_origin = "myorigin"
+
+Vagrant.configure(2) do |config|
+
+  config.vm.box = "bento/ubuntu-14.04"
+
+  config.vm.define "workstation-ubuntu" do |cs|
+    cs.vm.box = "bento/ubuntu-14.04"
+    cs.vm.hostname = "workstation-ubuntu"
+    cs.vm.network "private_network", ip: "192.168.145.132"
+
+    cs.vm.provider "vmware_fusion" do |v|
+      v.memory = 1024
+    end
+
+    #cs.vm.provision 'shell', inline: 'export PATH=$PATH:~/bin'
+    #cs.vm.provision 'shell', inline: "export HAB_ORIGIN=#{hab_origin}"
+
+    cs.vm.provision "chef_solo" do |chef|
+      chef.product = "chef"
+      chef.channel = chef_version.split('-')[0]
+      chef.version = chef_version.split('-')[1]
+      chef.cookbooks_path = "vendored-cookbooks"
+      chef.add_recipe "hab_getting_started::default"
+      chef.log_level = "warn"
+      chef.json = {
+        "snippets" => {
+          "virtualization" => "vmware_fusion"
+        },
+        "habitat" => {
+          "origin" => hab_origin
+        },
+        "workstation" => {
+          "environment" => {
+            "ubuntu" => "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/root/bin"
+          }
+        }
+      }
+    end
+  end
+end
