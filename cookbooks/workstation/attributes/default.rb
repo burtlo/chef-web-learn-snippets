@@ -2,14 +2,14 @@ default['products']['versions'].tap do |product|
   product['virtualbox']['ubuntu'] = '5.1'
   product['virtualbox']['windows'] = '5.1.4.110229'
 
-  product['vagrant']['ubuntu'] = '1.8.6'
-  product['vagrant']['windows'] = '1.8.6'
+  product['vagrant']['ubuntu'] = '1.9.1'
+  product['vagrant']['windows'] = '1.9.1'
 
   product['packer']['ubuntu'] = '0.11.0'
 
-  product['chefdk']['ubuntu'] = "stable-1.0.3"
-  product['chefdk']['centos'] = "stable-1.0.3"
-  product['chefdk']['windows'] = "stable-1.0.3"
+  product['chefdk']['ubuntu'] = "stable-1.1.16"
+  product['chefdk']['centos'] = "stable-1.1.16"
+  product['chefdk']['windows'] = "stable-1.1.16"
 
   product['chef_server']['ubuntu'] = 'stable-12.8.0'
   product['compliance']['ubuntu'] = 'stable-1.5.14'
