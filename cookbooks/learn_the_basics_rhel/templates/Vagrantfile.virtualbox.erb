@@ -28,8 +28,7 @@ Vagrant.configure(2) do |config|
       chef.log_level = "warn"
       chef.json = {
         "snippets" => {
-          "virtualization" => "virtualbox",
-          "prompt_character" => "[vagrant@localhost ~]$"
+          "virtualization" => "virtualbox"
         }
       }
     end
