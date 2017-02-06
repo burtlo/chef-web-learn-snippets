@@ -6,13 +6,17 @@ variable "ssh_key_file" {}
 ###
 ### TODO: Manually create an OpsWorks stack and update these values.
 ### TODO: Also remember to copy starter_kit.zip to the secrets directory.
+### TODO: Also remember to add inbound access to ports 8443, 8989, and 10000-10003 through your
+###       Chef Automate instance's security group.
 ###
 variable "chef_automate" {
   type = "map"
   default = {
-    fqdn = "test-t8g63tmuzohfpopb.us-east-1.opsworks-cm.io"
+    fqdn = "test-jags15hai32gppmi.us-east-1.opsworks-cm.io"
     version = "12.11.1"
     instance_type = "t2.medium"
+    username = "default"
+    password = "lRU4bvdqR3bt3BCK"
   }
 }
 ###
@@ -43,6 +47,15 @@ variable "region" {
 
 variable "availability_zone" {
   default = "b"
+}
+
+variable "runner" {
+  type = "map"
+  default = {
+    ami = "ami-6d1c2007" # CentOS 7
+    instance_type = "t2.micro"
+    name_tag = "runner"
+  }
 }
 
 variable "node1-centos" {
@@ -185,6 +198,26 @@ resource "aws_security_group" "workstation" {
   }
 }
 
+resource "aws_security_group" "runner" {
+  name = "runner"
+  description = "Rules for a Linux runner"
+
+  # SSH
+  ingress {
+      from_port = 22
+      to_port = 22
+      protocol = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port = 0
+    to_port = 0
+    protocol = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
 # node1-centos
 resource "aws_instance" "node1-centos" {
   ami = "${lookup(var.node1-centos, "ami")}"
@@ -242,6 +275,53 @@ $admin.psbase.invoke("SetPassword", "${var.windows_password}")
 EOF
 }
 
+# runner
+resource "aws_instance" "runner" {
+  ami = "${lookup(var.runner, "ami")}"
+  availability_zone = "${var.region}${var.availability_zone}"
+  instance_type = "${lookup(var.runner, "instance_type")}"
+  security_groups = ["${aws_security_group.runner.name}"]
+  associate_public_ip_address = true
+  tags {
+    Name = "${lookup(var.runner, "name_tag")}"
+  }
+  key_name = "${var.key_name}"
+
+  connection {
+    host     = "${aws_instance.runner.public_ip}"
+    user     = "centos"
+    key_file = "${var.ssh_key_file}"
+  }
+
+  provisioner "file" {
+    source = "vendored-cookbooks"
+    destination = "/tmp"
+  }
+
+  provisioner "file" {
+    source = "files/solo.rb"
+    destination = "/tmp/solo.rb"
+  }
+
+  provisioner "file" {
+      content = <<EOF
+  {
+    "run_list": [
+      "recipe[automate_deploy_cookbook::runner]"
+    ]
+  }
+  EOF
+    destination = "/tmp/dna.json"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "curl https://omnitruck.chef.io/install.sh | sudo bash -s -- -c ${var.chef_client_channel} -v ${var.chef_client_version}",
+      "sudo chef-solo -c /tmp/solo.rb -j /tmp/dna.json"
+    ]
+  }
+}
+
 # workstation
 resource "aws_instance" "workstation" {
   ami = "${lookup(var.workstation, "ami")}"
@@ -291,7 +371,7 @@ resource "aws_instance" "workstation" {
       content = <<EOF
   {
     "run_list": [
-      "recipe[manage_a_node]"
+      "recipe[automate_deploy_cookbook]"
     ],
     "snippets": {
       "virtualization": "opsworks"
@@ -301,17 +381,11 @@ resource "aws_instance" "workstation" {
       "org": "default"
     },
     "chef_automate": {
-      "fqdn": "${lookup(var.chef_automate, "fqdn")}"
+      "fqdn": "${lookup(var.chef_automate, "fqdn")}",
+      "username": "${lookup(var.chef_automate, "username")}",
+      "password": "${lookup(var.chef_automate, "password")}"
     },
     "nodes": [
-      {
-        "name": "node1-centos",
-        "platform": "rhel",
-        "ssh_user": "centos",
-        "identity_file": "~/.ssh/private_key",
-        "ip_address": "${aws_instance.node1-centos.public_ip}",
-        "cookbook": "learn_chef_httpd"
-      },
       {
         "name": "node1-ubuntu",
         "platform": "ubuntu",
@@ -319,14 +393,6 @@ resource "aws_instance" "workstation" {
         "identity_file": "~/.ssh/private_key",
         "ip_address": "${aws_instance.node1-ubuntu.public_ip}",
         "cookbook": "learn_chef_apache2"
-      },
-      {
-        "name": "node1-windows",
-        "platform": "windows",
-        "winrm_user": "Administrator",
-        "password": "${var.windows_password}",
-        "ip_address": "${aws_instance.node1-windows.public_ip}",
-        "cookbook": "learn_chef_iis"
       }
     ],
     "products": {

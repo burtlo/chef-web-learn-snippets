@@ -59,7 +59,7 @@ Vagrant.configure(2) do |config|
               "aws_region" => "us-east-1",
               "aws_availability_zone" => "b",
               "aws_subnet" => "subnet-3f22bd15",
-              "aws_ami" => "ami-3f0c4628",
+              "aws_ami" => "ami-abf616bd",
               "aws_security_group_ids" => "sg-48984132",
               "aws_ssh_key" => "/root/.ssh/learn-chef.pem"
             },
