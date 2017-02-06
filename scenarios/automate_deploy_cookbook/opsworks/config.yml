@@ -1,0 +1,3 @@
+---
+:cookbooks:
+  - automate_deploy_cookbook
