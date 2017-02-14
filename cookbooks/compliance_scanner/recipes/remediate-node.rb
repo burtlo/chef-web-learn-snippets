@@ -57,11 +57,20 @@ end
 
 with_snippet_options(cwd: '~/learn-chef', step: 'bootstrap-your-node') do
 
-  # knife bootstrap 192.168.77.78 --ssh-user vagrant --sudo --identity-file ~/.ssh/node1 --node-name node1 --run-list 'recipe[#{cookbook_name}]'
-  snippet_execute 'bootstrap-node1' do
-    command "knife bootstrap #{node1['ip_address']} --ssh-user #{node1['ssh_user']} --sudo --identity-file ~/.ssh/node1 --node-name node1 --run-list 'recipe[#{cookbook_name}]'"
-    remove_lines_matching [/locale/, /#########/]
-    not_if 'knife node list --config ~/learn-chef/.chef/knife.rb | grep node1'
+  if scenario_data['node_platform'] == 'windows'
+    # knife bootstrap windows winrm 192.168.145.134 --winrm-user vagrant --winrm-password 'vagrant' --node-name node1-windows --run-list 'recipe[admpwd]'
+    snippet_execute 'bootstrap-node1' do
+      command "knife bootstrap windows winrm #{node1['ip_address']} --winrm-user #{node1['winrm_user']} --winrm-password '#{node1['winrm_password']}' --node-name node1-windows --run-list 'recipe[#{cookbook_name}]'"
+      remove_lines_matching [/locale/, /#########/]
+      not_if 'knife node list --config ~/learn-chef/.chef/knife.rb | grep node1-windows'
+    end
+  else
+    # knife bootstrap 192.168.77.78 --ssh-user vagrant --sudo --identity-file ~/.ssh/node1 --node-name node1 --run-list 'recipe[#{cookbook_name}]'
+    snippet_execute 'bootstrap-node1' do
+      command "knife bootstrap #{node1['ip_address']} --ssh-user #{node1['ssh_user']} --sudo --identity-file ~/.ssh/node1 --node-name node1 --run-list 'recipe[#{cookbook_name}]'"
+      remove_lines_matching [/locale/, /#########/]
+      not_if 'knife node list --config ~/learn-chef/.chef/knife.rb | grep node1'
+    end
   end
 end
 
@@ -99,7 +108,7 @@ with_snippet_options(cwd: '~/learn-chef', step: 'cleanup') do
   execute 'get-node-chef-client-version' do
     command %q{knife exec -E 'nodes.find("name:node1") {|n| puts n.attributes.automatic.chef_packages.chef.version }' --config ~/learn-chef/.chef/knife.rb > /tmp/node1-chef-client-version}
   end
-  
+
   # knife cookbook delete #{cookbook_name}
   snippet_execute 'knife-cookbook-delete' do
     command "knife cookbook delete #{cookbook_name} --all --yes"

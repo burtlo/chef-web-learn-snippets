@@ -20,6 +20,19 @@ directory '~/learn-chef/cookbooks' do
   recursive true
 end
 
+if scenario_data['node_platform'] == 'windows'
+  # Install vagrant-winrm to work with Windows on Vagrant/VirtualBox.
+  execute 'install-vagrant-winrm' do
+    command 'vagrant plugin install vagrant-winrm'
+    not_if 'vagrant plugin list | grep vagrant-winrm'
+  end
+  # Import base box
+  execute 'vagrant-box-add-mwrock-windows2012r2' do
+    command 'vagrant box add mwrock/Windows2012R2 --provider virtualbox'
+    not_if 'vagrant box list | grep mwrock/Windows2012R2'
+  end
+end
+
 with_snippet_options(lesson: 'remediate-the-compliance-failure-locally')
 
 # 1. Understand the compliance failure
@@ -78,6 +91,11 @@ with_snippet_options(cwd: "~/learn-chef/cookbooks/#{cookbook_name}", step: "appl
     source_filename "#{node_platform}/.kitchen.yml"
   end
 
+  # .kitchen.local.yml
+  cookbook_file ::File.expand_path("~/learn-chef/cookbooks/#{cookbook_name}/.kitchen.local.yml") do
+    source "#{node_platform}/.kitchen.local.yml"
+  end
+
   # cd ~/learn-chef/cookbooks/#{cookbook_name}
   snippet_execute "cd-learn-chef-cookbooks-#{cookbook_name}-1" do
     cwd '~/learn-chef'
@@ -106,10 +124,12 @@ with_snippet_options(cwd: "~/learn-chef/cookbooks/#{cookbook_name}", step: "appl
     content lazy { ::File.read(::File.expand_path(kitchen_yml)) }
   end
 
-  # kitchen verify
-  snippet_execute 'kitchen-verify' do
-    command 'kitchen verify'
-    ignore_failure true
+  unless scenario_data['node_platform'] == 'windows' # takes too long on Windows :/
+    # kitchen verify
+    snippet_execute 'kitchen-verify' do
+      command 'kitchen verify'
+      ignore_failure true
+    end
   end
 
   # kitchen verify > verify.txt 2>&1
@@ -179,6 +199,12 @@ with_snippet_options(cwd: "~/learn-chef/cookbooks/#{cookbook_name}", step: 'reme
 
   # kitchen login ...
   # TODO: Can't do it non-interactively; kitchen exec --commmand cat /etc/ssh/sshd_config doesn't produce any output.
+
+  if scenario_data['kitchen_exec']
+    snippet_execute 'kitchen-exec-1' do
+      command scenario_data['kitchen_exec']
+    end
+  end
 
   # kitchen destroy
   snippet_execute 'kitchen-destroy' do

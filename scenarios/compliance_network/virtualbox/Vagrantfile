@@ -2,8 +2,8 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-chef_server_version = 'stable-12.9.0'
-chef_compliance_version = 'stable-1.5.14'
+chef_server_version = 'stable-12.12.0'
+chef_compliance_version = 'stable-1.7.7'
 
 compliance_username = "john-smith"
 compliance_password = "P4ssw0rd!"
@@ -125,6 +125,11 @@ sudo touch ~/.ssh/authorized_keys
 sudo cat ~/.ssh/node1.pub >> ~/.ssh/authorized_keys
 EOF
 
+WINDOWS_NODE_SCRIPT = <<EOF.freeze
+Add-Content C:\\Windows\\System32\\drivers\\etc\\hosts "10.1.1.33 chef-server.test"
+Add-Content C:\\Windows\\System32\\drivers\\etc\\hosts "10.1.1.34 chef-compliance.test"
+EOF
+
 def set_hostname(server)
   server.vm.provision 'shell', inline: "hostname #{server.vm.hostname}"
 end
@@ -165,6 +170,21 @@ Vagrant.configure(2) do |config|
     n.vm.provision 'file', source: '../../shared/files/node1.pub', destination: '/tmp/node1.pub'
     n.vm.provision :shell, inline: CENTOS_NODE_SCRIPT.dup
     set_hostname(n)
+  end
+
+  config.vm.define "node1-windows" do |cs|
+    cs.vm.box = "opentable/win-2012r2-standard-amd64-nocm"
+    cs.vm.guest = :windows
+    cs.vm.hostname = "node1-windows"
+    cs.vm.network 'private_network', ip: '192.168.145.134'
+    cs.vm.provision :shell, inline: WINDOWS_NODE_SCRIPT.dup
+    cs.winrm.username = "Administrator"
+    cs.vm.provider "vmware_fusion" do |v|
+      v.memory = 1024
+      v.cpus = 1
+      v.gui = false
+    end
+    #cs.vm.provision "shell", path: "../../shared/scripts/ReportIPAddress.ps1"
   end
 
   config.vm.define 'node1-ubuntu' do |n|

@@ -46,19 +46,36 @@ end
 # Add node.
 node1 = node["nodes"][node_platform]["node1"]
 
-snippet_compliance_api 'add node' do
-  action :add_node
-  data lazy { [
-    {
-      "hostname" => node1["ip_address"],
-      "name" => node1["name"],
-      "environment" => get_compliance_data('environments/default')['id'],
-      "loginUser" => node1["ssh_user"],
-      "loginMethod" => "ssh",
-      "loginKey" => "#{node['compliance']['username']}/node1"
-    }
-  ] }
-  key 'nodes/node1'
+if scenario_data['node_platform'] == 'windows'
+  snippet_compliance_api 'add node' do
+    action :add_node
+    data lazy { [
+      {
+        "hostname" => node1["ip_address"],
+        "name" => node1["name"],
+        "environment" => get_compliance_data('environments/default')['id'],
+        "loginUser" => node1["winrm_user"],
+        "loginPassword" => node1["winrm_password"],
+        "loginMethod" => "winrm"
+      }
+    ] }
+    key 'nodes/node1'
+  end
+else
+  snippet_compliance_api 'add node' do
+    action :add_node
+    data lazy { [
+      {
+        "hostname" => node1["ip_address"],
+        "name" => node1["name"],
+        "environment" => get_compliance_data('environments/default')['id'],
+        "loginUser" => node1["ssh_user"],
+        "loginMethod" => "ssh",
+        "loginKey" => "#{node['compliance']['username']}/node1"
+      }
+    ] }
+    key 'nodes/node1'
+  end
 end
 
 snippet_compliance_api 'check connectivity' do
@@ -106,10 +123,21 @@ include_recipe 'compliance_scanner::remediate-locally'
 include_recipe 'compliance_scanner::remediate-node'
 
 # Write config file.
+
+node_platform_full = case scenario_data['node_platform']
+when 'windows'
+  'A Windows Server 2012 R2'
+when 'rhel'
+  'A CentOS 7.2'
+when 'ubuntu'
+  'An Ubuntu 14.04'
+end
+
 snippet_config 'compliance_scanner' do
   variables lazy {
     ({
-      chef_client_version: ::File.read('tmp/node1-chef-client-version').strip
+      chef_client_version: ::File.read('tmp/node1-chef-client-version').strip,
+      node_platform: node_platform_full
     })
   }
 end

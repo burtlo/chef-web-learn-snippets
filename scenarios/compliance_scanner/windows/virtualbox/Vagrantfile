@@ -21,7 +21,7 @@ Vagrant.configure(2) do |config|
     cs.vm.network "private_network", ip: "10.1.1.36"
 
     cs.vm.provider "vmware_fusion" do |v|
-      v.memory = 2048
+      v.memory = 4096
       v.cpus = 1
 
       # Enable nested virtualization.
@@ -69,20 +69,21 @@ Vagrant.configure(2) do |config|
           "refresh_token" => "1/yHOJM5HLJL0APZB_u9cLxZ30llv5vYlOjpxNPPHzmA5RxC5p7dL5K8wKlObodMKRhdMa6GzVNk2Zbs5RNtSG2g==" # Need to get this manually
         },
         "scenario" => {
-          "node_platform" => "rhel",
-          "cookbook_name" => "ssh",
-          "rule_name" => "Set SSH Protocol to 2",
-          "compliance_profile" => "cis-centos7-level2"
+          "node_platform" => "windows",
+          "cookbook_name" => "admpwd",
+          "rule_name" => "Password Settings: Password Complexity",
+          "compliance_profile" => "cis-windows2012r2-level1-memberserver",
+          "kitchen_exec" => 'kitchen exec -c \'Get-ItemProperty "HKLM:\SOFTWARE\Policies\Microsoft Services\AdmPwd"\''
         },
         "nodes" => {
-          "rhel" => {
+          "windows" => {
             "node1" => {
               "name" => "node1",
-              "identity_file" => "~/.ssh/node1",
-              "hostname" => "node1.test",
-              "ip_address" => "192.168.145.131",
-              "ssh_user" => "root",
-              "run_list" => "recipe[ssh]"
+              "hostname" => "node1-windows",
+              "ip_address" => "192.168.145.142",
+              "winrm_user" => "vagrant",
+              "winrm_password" => "vagrant",
+              "run_list" => "recipe[admpwd]"
             }
           }
         }
