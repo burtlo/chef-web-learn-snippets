@@ -1,7 +1,5 @@
 #!/bin/bash
 
-chef_automate_fqdn=$1
-
 apt-get update
 apt-get -y install curl
 
@@ -19,7 +17,7 @@ if [ ! $(which chef-server-ctl) ]
       then
         mkdir ~/downloads
     fi
-    wget -P ~/downloads https://packages.chef.io/<%= @chef_server_channel %>/ubuntu/14.04/chef-server-core_<%= @chef_server_version %>-1_amd64.deb
+    wget -P ~/downloads https://packages.chef.io/files/<%= @chef_server_channel %>/chef-server/<%= @chef_server_version %>/ubuntu/14.04/chef-server-core_<%= @chef_server_version %>-1_amd64.deb
 
     # Install the package
     dpkg -i ~/downloads/chef-server-core_<%= @chef_server_version %>-1_amd64.deb
@@ -37,6 +35,7 @@ if [ ! $(which chef-server-ctl) ]
     chef-server-ctl org-create 4thcoffee 'Fourth Coffee, Inc.' --filename 4thcoffee-validator.pem -a admin
 
     # Create Chef Automate user and organization
+    # This user and organization are for internal use
     chef-server-ctl user-create delivery Delivery Admin delivery@4thcoffee.com P4ssw0rd! --filename /tmp/delivery.pem
-    chef-server-ctl org-create cohovineyard 'Coho Vineyard' --filename cohovineyard-validator.pem -a delivery
+    chef-server-ctl org-create automate 'Chef Automate' --filename automate-validator.pem -a delivery
 fi

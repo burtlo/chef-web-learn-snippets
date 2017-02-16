@@ -111,9 +111,36 @@ with_snippet_options(lesson: 'set-up-your-chef-server', cwd: '~') do
   end
   # run the install remotely
   execute 'ssh-install-chef-automate.sh' do
-    command "ssh -i ~/.ssh/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@#{chef_automate_fqdn} \"sudo bash -s\" < /tmp/install-chef-automate.sh \"#{chef_server_fqdn}\""
+    command "ssh -i ~/.ssh/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@#{chef_automate_fqdn} \"sudo bash -s\" < /tmp/install-chef-automate.sh"
+    ignore_failure true # we expect preflight check to return 1
     not_if 'stat /tmp/chef-automate.installed' # only do this once
   end
+
+  # Generate setup template.
+  template '/tmp/setup-chef-automate.sh' do
+    source 'setup-chef-automate.sh.erb'
+    mode '0700'
+    not_if 'stat /tmp/chef-automate.installed' # only do this once
+  end
+  with_snippet_options(step: 'create-chef-automate-setup-script') do
+    snippet_code_block 'setup-chef-automate-sh' do
+      file_path '/tmp/setup-chef-automate.sh'
+      content lazy { ::File.read('/tmp/setup-chef-automate.sh') }
+      not_if 'stat /tmp/chef-automate.installed' # only do this once
+    end
+  end
+  # scp it up
+  execute 'scp-setup-chef-automate.sh' do
+    command "scp -i ~/.ssh/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /tmp/setup-chef-automate.sh ubuntu@#{chef_automate_fqdn}:/tmp"
+    not_if 'stat /tmp/chef-automate.installed' # only do this once
+  end
+  # run the install remotely
+  execute 'ssh-setup-chef-automate.sh' do
+    command "ssh -i ~/.ssh/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@#{chef_automate_fqdn} \"sudo bash -s\" < /tmp/setup-chef-automate.sh \"#{chef_server_fqdn}\""
+    not_if 'stat /tmp/chef-automate.installed' # only do this once
+  end
+
+
 
   # We'll later need to copy Automate's server certificate to our nodes.
   # Grab the cert now.

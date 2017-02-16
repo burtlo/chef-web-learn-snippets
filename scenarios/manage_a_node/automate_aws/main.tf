@@ -16,15 +16,11 @@ variable "chef_server_channel" {
 }
 
 variable "chef_server_version" {
-  default = "12.11.1"
+  default = "12.12.0"
 }
 
 variable push_jobs_channel {
   default = "stable"
-}
-
-variable push_jobs_version {
-  default = "1.1.6"
 }
 
 variable delivery_channel {
@@ -32,7 +28,7 @@ variable delivery_channel {
 }
 
 variable delivery_version {
-  default = "0.6.7"
+  default = "0.6.136"
 }
 
 # Configure the AWS Provider
@@ -84,7 +80,7 @@ variable "windows_password" {
 variable "node1-windows" {
   type = "map"
   default = {
-    ami = "ami-bfeddca8" # Windows Server 2012 R2
+    ami = "ami-abf616bd" # Windows Server 2012 R2
     instance_type = "t2.medium"
     name_tag = "node1-windows"
   }

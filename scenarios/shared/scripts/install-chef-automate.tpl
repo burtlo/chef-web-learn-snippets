@@ -10,7 +10,7 @@ ntpdate -s time.nist.gov
 service ntp start
 
 # Install Chef Automate
-if [ ! $(which delivery-ctl) ]
+if [ ! $(which automate-ctl) ]
   then
     # Download the package
     if [ ! -d ~/downloads ]
@@ -23,13 +23,13 @@ if [ ! $(which delivery-ctl) ]
     dpkg -i ~/downloads/delivery_${delivery_version}-1_amd64.deb
 
     # Run setup
-    delivery-ctl setup --license /tmp/automate.license --key /tmp/delivery.pem --server-url https://$chef_server_fqdn/organizations/cohovineyard --fqdn $(hostname) --enterprise chordata --configure --no-build-node
-    delivery-ctl reconfigure
+    automate-ctl setup --license /tmp/automate.license --key /tmp/delivery.pem --server-url https://$chef_server_fqdn/organizations/cohovineyard --fqdn $(hostname) --enterprise chordata --configure --no-build-node
+    automate-ctl reconfigure
 
     # Wait for all services to come online
-    until (curl --insecure -D - https://localhost/api/_status) | grep "200 OK"; do sleep 5m && delivery-ctl restart; done
+    until (curl --insecure -D - https://localhost/api/_status) | grep "200 OK"; do sleep 5m && automate-ctl restart; done
     while (curl --insecure https://localhost/api/_status) | grep "fail"; do sleep 15s; done
 
     # Create an initial user
-    delivery-ctl create-user chordata delivery --password P4ssw0rd! --roles "admin"
+    automate-ctl create-user chordata delivery --password P4ssw0rd! --roles "admin"
 fi
