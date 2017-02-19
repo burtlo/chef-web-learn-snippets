@@ -178,8 +178,7 @@ resource "azurerm_virtual_machine" "test" {
         "recipe[learn_the_basics_rhel]"
       ],
       "snippets": {
-        "virtualization": "azure",
-        "prompt_character": "[${var.username}@${var.hostname} ~]$"
+        "virtualization": "azure"
       },
       "cloud": {
         "azure": {

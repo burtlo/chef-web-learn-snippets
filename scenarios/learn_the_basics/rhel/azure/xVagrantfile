@@ -42,8 +42,7 @@ Vagrant.configure('2') do |config|
     chef.log_level = "fatal"
     chef.json = {
       "snippets" => {
-        "virtualization" => "azure",
-        "prompt_character" => "[chef@ancient-paper-63 /]$"
+        "virtualization" => "azure"
       },
       "cloud" => {
         "azure" => {
@@ -111,8 +110,7 @@ end
 #     chef.log_level = "fatal"
 #     chef.json = {
 #       "snippets" => {
-#         "virtualization" => "aws",
-#         "prompt_character" => "[centos@ip-172-33-44-55 ~]$"
+#         "virtualization" => "aws"
 #       },
 #       "cloud" => {
 #         "aws" => {
