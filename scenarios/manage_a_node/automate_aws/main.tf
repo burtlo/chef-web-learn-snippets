@@ -441,7 +441,7 @@ resource "aws_instance" "workstation" {
     },
     "chef_server": {
       "fqdn": "${aws_instance.chef_server.public_dns}",
-      "org": "4thcoffee"
+      "org": "automate"
     },
     "chef_automate": {
       "fqdn": "${aws_instance.chef_automate.public_dns}"

@@ -3,7 +3,7 @@
 chef_server_fqdn=$1
 
 # Run setup
-automate-ctl setup --license /tmp/automate.license --key /tmp/delivery.pem --server-url https://$chef_server_fqdn/organizations/4thcoffee --fqdn $(hostname) --enterprise default --configure --no-build-node
+automate-ctl setup --license /tmp/automate.license --key /tmp/delivery.pem --server-url https://$chef_server_fqdn/organizations/automate --fqdn $(hostname) --enterprise default --configure --no-build-node
 
 # Wait for all services to come online
 until (curl --insecure -D - https://localhost/api/_status) | grep "200 OK"; do sleep 15s; done
