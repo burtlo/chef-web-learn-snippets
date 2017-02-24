@@ -226,8 +226,8 @@ end
 template '/tmp/knife.rb' do
   source 'knife.rb.erb'
   variables({
-    :node_name => "admin",
-    :client_key => "admin.pem",
+    :node_name => "delivery",
+    :client_key => "delivery.pem",
     :chef_server_url => "https://#{node['chef_server']['fqdn']}/organizations/#{node['chef_server']['org']}"
   })
 end
@@ -239,9 +239,9 @@ with_snippet_options(step: 'generate-knife-config') do
     content lazy { ::File.read('/tmp/knife.rb') }
   end
 
-  # grab the admin.pem from Chef server
+  # grab the delivery.pem from Chef server
   snippet_execute 'download-admin-pem-to-workstation' do
-    command "scp -i ~/.ssh/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@#{chef_server_fqdn}:/tmp/admin.pem ~/learn-chef/.chef"
+    command "scp -i ~/.ssh/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@#{chef_server_fqdn}:/tmp/delivery.pem ~/learn-chef/.chef"
   end
 
 end
