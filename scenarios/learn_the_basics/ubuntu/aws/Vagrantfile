@@ -2,7 +2,7 @@
 # vi: set ft=ruby :
 chef_version = "stable-12.12.15"
 aws_region = "us-east-1"
-aws_ami_id = "ami-2d39803a"
+aws_ami_id = "ami-49c9295f"
 aws_instance_type = "t2.micro"
 
 Vagrant.configure("2") do |config|

@@ -10,7 +10,7 @@ variable "ssh_key_file" {}
 variable "chef_automate" {
   type = "map"
   default = {
-    fqdn = "test-t8g63tmuzohfpopb.us-east-1.opsworks-cm.io"
+    fqdn = "test-dfuujy72z74ng5gj.us-east-1.opsworks-cm.io"
     version = "12.11.1"
     instance_type = "t2.medium"
   }
@@ -70,7 +70,7 @@ variable "node1-windows" {
 variable "node1-ubuntu" {
   type = "map"
   default = {
-    ami = "ami-2d39803a" # Ubuntu 14.04
+    ami = "ami-49c9295f" # Ubuntu 14.04
     instance_type = "t2.micro"
     name_tag = "node1-ubuntu"
   }
@@ -79,7 +79,7 @@ variable "node1-ubuntu" {
 variable "workstation" {
   type = "map"
   default = {
-    ami = "ami-2d39803a" # Ubuntu 14.04
+    ami = "ami-49c9295f" # Ubuntu 14.04
     instance_type = "t2.micro"
     name_tag = "workstation"
   }

@@ -30,12 +30,8 @@ if [ ! $(which chef-server-ctl) ]
     until (curl -D - http://localhost:8000/_status) | grep "200 OK"; do sleep 15s; done
     while (curl http://localhost:8000/_status) | grep "fail"; do sleep 15s; done
 
-    # Create an initial user
-    chef-server-ctl user-create admin Bob Admin admin@4thcoffee.com P4ssw0rd! --filename /tmp/admin.pem
-    chef-server-ctl org-create 4thcoffee 'Fourth Coffee, Inc.' --filename 4thcoffee-validator.pem -a admin
-
     # Create Chef Automate user and organization
     # This user and organization are for internal use
-    chef-server-ctl user-create delivery Delivery Admin delivery@4thcoffee.com P4ssw0rd! --filename /tmp/delivery.pem
+    chef-server-ctl user-create delivery Delivery Admin delivery@example.com P4ssw0rd! --filename /tmp/delivery.pem
     chef-server-ctl org-create automate 'Chef Automate' --filename automate-validator.pem -a delivery
 fi

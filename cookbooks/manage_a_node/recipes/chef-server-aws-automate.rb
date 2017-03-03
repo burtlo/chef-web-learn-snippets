@@ -52,14 +52,7 @@ with_snippet_options(lesson: 'set-up-your-chef-server', cwd: '~') do
     command "ssh -i ~/.ssh/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@#{chef_server_fqdn} \"sudo bash -s\" < /tmp/install-chef-server.sh"
     not_if 'stat /tmp/chef-server.installed' # only do this once
   end
-  # grab the admin.pem
-  with_snippet_options(step: 'download-admin-pem') do
-    snippet_execute 'download-admin-pem-to-workstation' do
-      command "scp -i ~/.ssh/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@#{chef_server_fqdn}:/tmp/admin.pem ~/learn-chef/.chef"
-      not_if 'stat /tmp/chef-server.installed' # only do this once
-    end
-  end
-  # grab the delivery.pem
+  # grab delivery.pem
   with_snippet_options(step: 'download-delivery-pem') do
     snippet_execute 'download-delivery-pem-to-workstation' do
       command "scp -i ~/.ssh/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@#{chef_server_fqdn}:/tmp/delivery.pem /tmp"
@@ -239,9 +232,9 @@ with_snippet_options(step: 'generate-knife-config') do
     content lazy { ::File.read('/tmp/knife.rb') }
   end
 
-  # grab the delivery.pem from Chef server
+  # copy /tmp/delivery.pem to ~/learn-chef/.chef
   snippet_execute 'download-admin-pem-to-workstation' do
-    command "scp -i ~/.ssh/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@#{chef_server_fqdn}:/tmp/delivery.pem ~/learn-chef/.chef"
+    command "cp /tmp/delivery.pem ~/learn-chef/.chef"
   end
 
 end

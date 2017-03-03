@@ -51,7 +51,7 @@ variable "node1_centos" {
 variable "node1_ubuntu" {
   type = "map"
   default = {
-    ami = "ami-2d39803a" # Ubuntu 14.04
+    ami = "ami-49c9295f" # Ubuntu 14.04
     instance_type = "t2.micro"
     name_tag = "node1-ubuntu"
   }
@@ -69,7 +69,7 @@ variable "node1_windows" {
 variable "workstation" {
   type = "map"
   default = {
-    ami = "ami-2d39803a" # Ubuntu 14.04
+    ami = "ami-49c9295f" # Ubuntu 14.04
     instance_type = "t2.micro"
     name_tag = "workstation"
   }
