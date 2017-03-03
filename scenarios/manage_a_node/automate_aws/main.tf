@@ -16,7 +16,7 @@ variable "chef_server_channel" {
 }
 
 variable "chef_server_version" {
-  default = "12.12.0"
+  default = "12.13.0"
 }
 
 variable push_jobs_channel {
@@ -49,7 +49,7 @@ variable "availability_zone" {
 variable "chef_automate" {
   type = "map"
   default = {
-    ami = "ami-2d39803a" # Ubuntu 14.04
+    ami = "ami-49c9295f" # Ubuntu 14.04
     instance_type = "t2.large"
     name_tag = "chef-automate"
   }
@@ -58,7 +58,7 @@ variable "chef_automate" {
 variable "chef_server" {
   type = "map"
   default = {
-    ami = "ami-2d39803a" # Ubuntu 14.04
+    ami = "ami-49c9295f" # Ubuntu 14.04
     instance_type = "t2.large"
     name_tag = "chef-server"
   }
@@ -89,7 +89,7 @@ variable "node1-windows" {
 variable "node1-ubuntu" {
   type = "map"
   default = {
-    ami = "ami-2d39803a" # Ubuntu 14.04
+    ami = "ami-49c9295f" # Ubuntu 14.04
     instance_type = "t2.micro"
     name_tag = "node1-ubuntu"
   }
@@ -98,7 +98,7 @@ variable "node1-ubuntu" {
 variable "workstation" {
   type = "map"
   default = {
-    ami = "ami-2d39803a" # Ubuntu 14.04
+    ami = "ami-49c9295f" # Ubuntu 14.04
     instance_type = "t2.micro"
     name_tag = "workstation"
   }
