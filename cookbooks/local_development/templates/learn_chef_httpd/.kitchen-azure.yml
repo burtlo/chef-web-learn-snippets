@@ -5,7 +5,10 @@ driver:
 driver_config:
   subscription_id: <%= @config['azure_subscription_id'] %>
   location: "East US"
-  machine_size: "Standard_D2"
+  machine_size: "Standard_D1"
+
+transport:
+  ssh_key: <%= @config['azure_ssh_key'] %>
 
 provisioner:
   name: chef_zero
@@ -14,17 +17,18 @@ verifier:
   name: inspec
 
 platforms:
-  - name: windows-2012r2
+  - name: centos-7.2
     driver_config:
-      image_urn: MicrosoftWindowsServer:WindowsServer:2012-R2-Datacenter:latest
-    transport:
-      name: winrm
-      username: azure
+      image_urn: OpenLogic:CentOS:7.2n:7.2.20160629
+      vm_name: centos-vm
+      vm_tags:
+        ostype: linux
+        distro: centos
 
 suites:
   - name: default
     run_list:
-      - recipe[learn_chef_iis::default]
+      - recipe[learn_chef_httpd::default]
     verifier:
       inspec_tests:
         - test/smoke/default

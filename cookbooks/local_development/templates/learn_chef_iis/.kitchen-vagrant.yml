@@ -30,5 +30,5 @@ suites:
       - recipe[learn_chef_iis::default]
     verifier:
       inspec_tests:
-        - test/recipes
+        - test/smoke/default
     attributes:

@@ -5,7 +5,7 @@ driver:
   region: <%= @config['aws_region'] %>
   availability_zone: <%= @config['aws_availability_zone'] %>
   subnet_id: <%= @config['aws_subnet'] %>
-  instance_type: m1.small
+  instance_type: t2.micro
   image_id: <%= @config['aws_ami'] %>
   security_group_ids: <%= @config['aws_security_group_ids'] %>
   retryable_tries: 120
@@ -20,12 +20,12 @@ transport:
   ssh_key: <%= @config['aws_ssh_key'] %>
 
 platforms:
-  - name: windows-2012r2
+  - name: ubuntu-14.04
 
 suites:
   - name: default
     run_list:
-      - recipe[learn_chef_iis::default]
+      - recipe[learn_chef_apache2::default]
     verifier:
       inspec_tests:
         - test/smoke/default
