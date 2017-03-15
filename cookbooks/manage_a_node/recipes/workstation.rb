@@ -5,8 +5,10 @@
 # Copyright (c) 2016 The Authors, All Rights Reserved.
 
 # Install git
-git_client 'default' do
-  action :install
+unless node['platform'] == 'windows'
+  git_client 'default' do
+    action :install
+  end
 end
 
 # Install Chef DK
@@ -24,7 +26,7 @@ with_snippet_options(lesson: 'set-up-your-workstation', shell: shell) do
     unless node['snippets']['virtualization'] == 'opsworks'
       snippet_execute 'mkdir-learn-chef' do
         command 'mkdir ~/learn-chef'
-        not_if 'stat ~/learn-chef'
+        not_if "stat #{::File.expand_path('~/learn-chef')}"
       end
 
       snippet_execute 'cd-learn-chef' do

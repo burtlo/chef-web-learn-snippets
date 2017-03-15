@@ -4,73 +4,83 @@
 #
 # Copyright (c) 2016 The Authors, All Rights Reserved.
 
+shell = node['platform'] == 'windows' ? 'powershell' : nil
 with_snippet_options(
   tutorial: 'local-development',
   platform: node['snippets']['node_platform'],
   virtualization: 'vagrant',
+  shell: shell,
   prompt_character: node['snippets']['prompt_character']
   ) do
 
   include_recipe 'manage_a_node::workstation'
 
-  shell = node['platform'] == 'windows' ? 'ps' : nil
   with_snippet_options(
     lesson: 'set-up-your-workstation',
-    shell: shell,
     cwd: '~',
     step: 'set-up-your-working-directory') do
 
     ### Prerequisite setup
 
-    # Install vagrant-winrm to work with Windows on Vagrant/VirtualBox.
-    snippet_execute 'install-vagrant-winrm' do
-      command 'vagrant plugin install vagrant-winrm'
-      not_if 'vagrant plugin list | grep vagrant-winrm'
+    unless node['platform'] == 'windows'
+
+      # Install vagrant-winrm to work with Windows on Vagrant/VirtualBox.
+      snippet_execute 'install-vagrant-winrm' do
+        command 'vagrant plugin install vagrant-winrm'
+        not_if 'vagrant plugin list | grep vagrant-winrm'
+      end
+
+      # Copy the credentials file and SSH key so we can work with AWS and Azure.
+      directory ::File.expand_path('~/.ssh')
+      file ::File.expand_path('~/.ssh/learn-chef.pem') do
+        content ::File.read("/vagrant/secrets/learn-chef.pem")
+        mode '0600'
+      end
+      file ::File.expand_path('~/.ssh/learn-chef.pem.pub') do
+        content ::File.read("/vagrant/secrets/learn-chef.pem.pub")
+        mode '0600'
+      end
+      directory ::File.expand_path('~/.aws')
+      file ::File.expand_path('~/.aws/credentials') do
+        content ::File.read("/vagrant/secrets/aws/credentials")
+        mode '0600'
+      end
+
+      # Install kitchen-azurerm
+      package 'build-essential'
+      snippet_execute 'install-kitchen-azurerm' do
+        command 'chef gem install kitchen-azurerm'
+        not_if 'chef gem list | grep kitchen-azurerm'
+      end
+
+      # Copy Azure credentials file.
+      directory ::File.expand_path('~/.azure')
+      file ::File.expand_path('~/.azure/credentials') do
+        content ::File.read("/vagrant/secrets/azure/credentials")
+        mode '0600'
+      end
+
+      # Install kitchen-google
+      snippet_execute 'install-kitchen-google' do
+        command 'chef gem install kitchen-google'
+        not_if 'chef gem list | grep kitchen-google'
+      end
+
+      # Copy Google credentials file.
+      directory ::File.expand_path('~/.config/gcloud') do
+        recursive true
+      end
+      file ::File.expand_path('~/.config/gcloud/application_default_credentials.json') do
+        content ::File.read("/vagrant/secrets/gce/application_default_credentials.json")
+        mode '0600'
+      end
+
     end
 
-    # Copy the credentials file and SSH key so we can work with AWS and Azure.
-    directory ::File.expand_path('~/.ssh')
-    file ::File.expand_path('~/.ssh/learn-chef.pem') do
-      content ::File.read("/vagrant/secrets/learn-chef.pem")
-      mode '0600'
-    end
-    file ::File.expand_path('~/.ssh/learn-chef.pem.pub') do
-      content ::File.read("/vagrant/secrets/learn-chef.pem.pub")
-      mode '0600'
-    end
-    directory ::File.expand_path('~/.aws')
-    file ::File.expand_path('~/.aws/credentials') do
-      content ::File.read("/vagrant/secrets/aws/credentials")
-      mode '0600'
-    end
-
-    # Install kitchen-azurerm
-    package 'build-essential'
-    snippet_execute 'install-kitchen-azurerm' do
-      command 'chef gem install kitchen-azurerm'
-      not_if 'chef gem list | grep kitchen-azurerm'
-    end
-
-    # Copy Azure credentials file.
-    directory ::File.expand_path('~/.azure')
-    file ::File.expand_path('~/.azure/credentials') do
-      content ::File.read("/vagrant/secrets/azure/credentials")
-      mode '0600'
-    end
-
-    # Install kitchen-google
-    snippet_execute 'install-kitchen-google' do
-      command 'chef gem install kitchen-google'
-      not_if 'chef gem list | grep kitchen-google'
-    end
-
-    # Copy Google credentials file.
-    directory ::File.expand_path('~/.config/gcloud') do
-      recursive true
-    end
-    file ::File.expand_path('~/.config/gcloud/application_default_credentials.json') do
-      content ::File.read("/vagrant/secrets/gce/application_default_credentials.json")
-      mode '0600'
+    # Install kitchen-hyperv
+    snippet_execute 'install-kitchen-hyperv' do
+      command 'chef gem install kitchen-hyperv'
+      not_if 'chef gem list | grep kitchen-hyperv'
     end
 
     ###
@@ -107,6 +117,22 @@ with_snippet_options(
     with_snippet_options(platform: platform)
 
     drivers.each do |driver|
+
+      # Download the Windows box if we're running Hyper-V.
+      if driver == 'hyperv'
+        directory 'C:\Hyper-V\WindowsServer2012R2\Virtual Machines\48792E29-FBE0-4267-A068-D9F088C4452A' do
+          recursive true
+        end
+        remote_file 'C:\Hyper-V\WindowsServer2012R2\Virtual Machines\48792E29-FBE0-4267-A068-D9F088C4452A.xml' do
+          source 'https://s3.amazonaws.com/learn-chef-images/Hyper-V/WindowsServer2012R2/Virtual+Machines/48792E29-FBE0-4267-A068-D9F088C4452A.xml'
+          action :create_if_missing
+        end
+        remote_file 'C:\Hyper-V\WindowsServer2012R2.vhdx' do
+          source 'https://s3.amazonaws.com/learn-chef-images/Hyper-V/WindowsServer2012R2.vhdx'
+          action :create_if_missing
+        end
+      end
+
       with_snippet_options(
         virtualization: driver,
         lesson: "apply-the-cookbook-#{cookbook}-#{driver}",
