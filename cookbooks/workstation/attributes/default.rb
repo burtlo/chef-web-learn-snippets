@@ -1,9 +1,9 @@
 default['products']['versions'].tap do |product|
   product['virtualbox']['ubuntu'] = '5.1'
-  product['virtualbox']['windows'] = '5.1.4.110229'
+  product['virtualbox']['windows'] = '5.1.16'
 
-  product['vagrant']['ubuntu'] = '1.9.1'
-  product['vagrant']['windows'] = '1.9.1'
+  product['vagrant']['ubuntu'] = '1.9.2'
+  product['vagrant']['windows'] = '1.9.2'
 
   product['packer']['ubuntu'] = '0.11.0'
 

@@ -1,0 +1,35 @@
+---
+driver:
+  name: gce
+  project: cheftraining-petchel
+  zone: us-east1-c
+  email: tpetchel@chef.io
+  tags:
+    - test-kitchen
+  service_account_scopes:
+    - devstorage.read_write
+    - userinfo.email
+
+provisioner:
+  name: chef_zero
+
+transport:
+  username: tpetchel
+
+verifier:
+  name: inspec
+
+platforms:
+  - name: windows
+    driver:
+      image_name: windows-2012-r2-core-test-kitchen
+      disk_size: 50
+
+suites:
+  - name: default
+    run_list:
+      - recipe[learn_chef_iis::default]
+    verifier:
+      inspec_tests:
+        - test/smoke/default
+    attributes:

@@ -28,10 +28,14 @@ with_snippet_options(
       not_if 'vagrant plugin list | grep vagrant-winrm'
     end
 
-    # Copy the credentials file and EC2 SSH key so we can work with AWS.
+    # Copy the credentials file and SSH key so we can work with AWS and Azure.
     directory ::File.expand_path('~/.ssh')
     file ::File.expand_path('~/.ssh/learn-chef.pem') do
       content ::File.read("/vagrant/secrets/learn-chef.pem")
+      mode '0600'
+    end
+    file ::File.expand_path('~/.ssh/learn-chef.pem.pub') do
+      content ::File.read("/vagrant/secrets/learn-chef.pem.pub")
       mode '0600'
     end
     directory ::File.expand_path('~/.aws')
@@ -51,6 +55,21 @@ with_snippet_options(
     directory ::File.expand_path('~/.azure')
     file ::File.expand_path('~/.azure/credentials') do
       content ::File.read("/vagrant/secrets/azure/credentials")
+      mode '0600'
+    end
+
+    # Install kitchen-google
+    snippet_execute 'install-kitchen-google' do
+      command 'chef gem install kitchen-google'
+      not_if 'chef gem list | grep kitchen-google'
+    end
+
+    # Copy Google credentials file.
+    directory ::File.expand_path('~/.config/gcloud') do
+      recursive true
+    end
+    file ::File.expand_path('~/.config/gcloud/application_default_credentials.json') do
+      content ::File.read("/vagrant/secrets/gce/application_default_credentials.json")
       mode '0600'
     end
 
@@ -134,8 +153,12 @@ with_snippet_options(
             snippet_code_block "kitchen-yml-#{cookbook}-#{driver}-2" do
               file_path "~/learn-chef/cookbooks/#{cookbook}/.kitchen.yml"
               content lazy {
-                # The `sub` hides our Azure subscription id
-                ::File.read(::File.expand_path("~/learn-chef/cookbooks/#{cookbook}/.kitchen.yml")).sub(/subscription_id: .+$/, "subscription_id: 12345678-YOUR-GUID-HERE-123456789ABC")
+                # The `sub` hides our Azure subscription id and Google project ID/email
+                ::File.read(::File.expand_path("~/learn-chef/cookbooks/#{cookbook}/.kitchen.yml"))
+                  .sub(/subscription_id: .+$/, "subscription_id: 12345678-YOUR-GUID-HERE-123456789ABC")
+                  .sub(/project: .+$/, "project: funky-penguin-12345")
+                  .sub(/email: .+$/, "email: me@mycompany.com")
+                  .sub(/username: .+$/, "username: chefuser")
                }
               write_system_file false
             end
@@ -204,7 +227,7 @@ with_snippet_options(
         end
         vagrant_ubuntu_version = '/vagrant/vagrant-ubuntu.version'
         virtualbox_ubuntu_version = '/vagrant/virtualbox-ubuntu.version'
-        snippet_config "manage-a-node-#{platform}" do
+        snippet_config "local-development-#{platform}-#{driver}" do
           tutorial 'local-development'
           platform platform
           variables lazy {
