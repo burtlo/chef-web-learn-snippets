@@ -11,7 +11,7 @@ default['products']['versions'].tap do |product|
   product['chefdk']['centos'] = "stable-1.2.22"
   product['chefdk']['windows'] = "stable-1.2.22"
 
-  product['chef_server']['ubuntu'] = 'stable-12.12.0'
+  product['chef_server']['ubuntu'] = 'stable-12.13.0'
   product['compliance']['ubuntu'] = 'stable-1.7.7'
 end
 
