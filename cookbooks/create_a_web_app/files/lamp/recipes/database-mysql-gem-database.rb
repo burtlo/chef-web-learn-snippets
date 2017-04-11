@@ -18,9 +18,9 @@ mysql2_chef_gem 'default' do
 end
 
 mysql_connection_info = {
-  :host     => '127.0.0.1',
-  :username => 'root',
-  :password => passwords['root_password']
+  host: '127.0.0.1',
+  username: 'root',
+  password: passwords['root_password']
 }
 
 # Create the database instance.

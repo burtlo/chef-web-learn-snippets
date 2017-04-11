@@ -191,7 +191,7 @@ drivers.each do |driver|
 
         with_snippet_options(step: "verify-the-apache-configuration-#{platform}-#{driver}") do
           snippet_code_block "inspec-web-#{platform}-#{driver}-1" do
-            file_path "~/learn-chef/cookbooks/#{cookbook}/test/smoke/default/web.rb"
+            file_path "~/learn-chef/cookbooks/#{cookbook}/test/smoke/default/web_test.rb"
             source_filename "#{cookbook}/smoke/web.rb"
           end
           snippet_code_block "inspec-default-#{platform}-#{driver}-1" do
@@ -310,7 +310,7 @@ drivers.each do |driver|
             cwd '~/learn-chef/cookbooks/lamp'
           end
           snippet_code_block "inspec-database-#{platform}-#{driver}-1" do
-            file_path "~/learn-chef/cookbooks/#{cookbook}/test/smoke/default/database.rb"
+            file_path "~/learn-chef/cookbooks/#{cookbook}/test/smoke/default/database_test.rb"
             source_filename "#{cookbook}/smoke/database.rb"
           end
           snippet_execute "kitchen-verify-database-#{platform}-#{driver}-1" do
