@@ -121,6 +121,10 @@ def map_language(file_path)
     'yaml'
   when '.htm', '.html'
     'html'
+  when '.sql'
+    'sql'
+  when '.php'
+    'php'
   when '.erb'
     # Strip .erb extension and get language for base name.
     map_language(::File.basename(file_path, file_ext))

@@ -21,6 +21,7 @@ property :left_justify, [ TrueClass, FalseClass ], default: false
 property :write_stdout, [ TrueClass, FalseClass ], default: true
 property :write_stderr, [ TrueClass, FalseClass ], default: true
 property :write_exitstatus, [ TrueClass, FalseClass ], default: false
+property :truncate_stdout, [ Array, nil ], default: nil
 
 def initialize(*args)
   super
@@ -64,6 +65,7 @@ action :run do
 
   # Clean the output.
   clean_stdout = clean_output(result.stdout.dup)
+  clean_stdout = truncate_output(clean_stdout, truncate_stdout) if truncate_stdout
   clean_stderr = clean_output(result.stderr.dup)
   # Write metadata.
   directory ::File.dirname(snippet_metadata_filename) do
@@ -184,7 +186,7 @@ def translate_command
     end
   elsif command =~ /^chef-client/ || command =~ /^sudo chef-client/
     translate_chef_client_command
-  elsif command =~ /knife/
+  elsif command =~ /knife/ && command !~ /knife supermarket/
     # Not sure why, but from shell_out, knife.rb isn't found unless you specify the config file path.
     command + " --config ~/learn-chef/.chef/knife.rb --no-color"
   elsif command == 'berks upload'
@@ -220,7 +222,7 @@ def clean_output(output)
   cleaned_output = []
   output.lines.each do |line|
     clean_line = line.gsub(/\[[\d+;?]+m/, '').gsub(/^(.*)\[\d+m/, '\1')
-    unwanted = [/setlocale/, /\[K/]
+    unwanted = [/setlocale/, /\[K/, /You are setting a key that conflicts/]
     cleaned_output << clean_line unless unwanted.any? { |s| clean_line =~ s }
   end
   cleaned_output.join("\n")
@@ -231,4 +233,43 @@ def clean_output(output)
   # else
   #   output
   # end
+end
+
+def truncate_output(output, rules)
+  lines = output.lines
+  len = lines.length
+  drops = []
+  keeps = []
+  rules.each do |rule|
+    s = rule[:skip] * len
+    e = s + (rule[:take] * len)
+    range = (s..e)
+    case rule[:action]
+    when :drop
+      drops << range
+    when :keep
+      keeps << range
+    end
+  end
+
+  prev_line = nil
+  result = []
+  lines.each_with_index do |line, index|
+    keep = true
+    if keeps.any? { |range| range.include?(index) }
+      keep = true
+    elsif drops.any? { |range| range.include?(index) }
+      keep = false
+    end
+    if keep
+      result << line
+      prev_line = line
+    else
+      unless prev_line == '[...]'
+        result << '[...]'
+        prev_line = '[...]'
+      end
+    end
+  end
+  result.join("\n")
 end

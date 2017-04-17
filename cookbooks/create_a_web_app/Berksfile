@@ -1,0 +1,7 @@
+source 'https://supermarket.chef.io'
+
+metadata
+
+cookbook 'manage_a_node', path: '../manage_a_node'
+cookbook 'snippet', path: '../snippet'
+cookbook 'workstation', path: '../workstation'
