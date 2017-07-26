@@ -2,8 +2,8 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-chef_server_version = 'stable-12.12.0'
-chef_compliance_version = 'stable-1.7.7'
+chef_server_version = 'stable-12.15.8'
+chef_compliance_version = 'stable-1.10.2'
 
 compliance_username = "john-smith"
 compliance_password = "P4ssw0rd!"
@@ -162,30 +162,30 @@ Vagrant.configure(2) do |config|
     end
   end
 
-  config.vm.define 'node1-centos' do |n|
-    n.vm.box = 'bento/centos-7.2'
-    n.vm.hostname = 'node1-centos.test'
-    n.vm.network 'private_network', ip: '10.1.1.35'
-    n.vm.provision 'file', source: '../../shared/files/node1', destination: '/tmp/node1'
-    n.vm.provision 'file', source: '../../shared/files/node1.pub', destination: '/tmp/node1.pub'
-    n.vm.provision :shell, inline: CENTOS_NODE_SCRIPT.dup
-    set_hostname(n)
-  end
-
-  config.vm.define "node1-windows" do |cs|
-    cs.vm.box = "opentable/win-2012r2-standard-amd64-nocm"
-    cs.vm.guest = :windows
-    cs.vm.hostname = "node1-windows"
-    cs.vm.network 'private_network', ip: '192.168.145.134'
-    cs.vm.provision :shell, inline: WINDOWS_NODE_SCRIPT.dup
-    cs.winrm.username = "Administrator"
-    cs.vm.provider "vmware_fusion" do |v|
-      v.memory = 1024
-      v.cpus = 1
-      v.gui = false
-    end
-    #cs.vm.provision "shell", path: "../../shared/scripts/ReportIPAddress.ps1"
-  end
+  # config.vm.define 'node1-centos' do |n|
+  #   n.vm.box = 'bento/centos-7.2'
+  #   n.vm.hostname = 'node1-centos.test'
+  #   n.vm.network 'private_network', ip: '10.1.1.35'
+  #   n.vm.provision 'file', source: '../../shared/files/node1', destination: '/tmp/node1'
+  #   n.vm.provision 'file', source: '../../shared/files/node1.pub', destination: '/tmp/node1.pub'
+  #   n.vm.provision :shell, inline: CENTOS_NODE_SCRIPT.dup
+  #   set_hostname(n)
+  # end
+  #
+  # config.vm.define "node1-windows" do |cs|
+  #   cs.vm.box = "opentable/win-2012r2-standard-amd64-nocm"
+  #   cs.vm.guest = :windows
+  #   cs.vm.hostname = "node1-windows"
+  #   cs.vm.network 'private_network', ip: '192.168.145.134'
+  #   cs.vm.provision :shell, inline: WINDOWS_NODE_SCRIPT.dup
+  #   cs.winrm.username = "Administrator"
+  #   cs.vm.provider "vmware_fusion" do |v|
+  #     v.memory = 1024
+  #     v.cpus = 1
+  #     v.gui = false
+  #   end
+  #   #cs.vm.provision "shell", path: "../../shared/scripts/ReportIPAddress.ps1"
+  # end
 
   config.vm.define 'node1-ubuntu' do |n|
     n.vm.box = 'bento/ubuntu-14.04'
