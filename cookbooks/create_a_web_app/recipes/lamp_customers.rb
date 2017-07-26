@@ -90,7 +90,7 @@ drivers.each do |driver|
         snippet_code_block "index-php-#{platform}-#{driver}" do
           file_path "~/learn-chef/cookbooks/#{cookbook}/templates/index.php.erb"
           source_filename "#{cookbook}/templates/index.php.erb"
-          language 'php'
+          language 'html'
         end
         snippet_code_block "index-php-excerpt-#{platform}-#{driver}" do
           file_path "~/learn-chef/cookbooks/#{cookbook}/templates/index.php.erb"

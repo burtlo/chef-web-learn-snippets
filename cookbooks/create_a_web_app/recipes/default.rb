@@ -33,7 +33,8 @@ with_snippet_options(
     ###
   end
 
-  include_recipe 'create_a_web_app::lamp'
-  include_recipe 'create_a_web_app::lamp_customers'
+  #include_recipe 'create_a_web_app::lamp'
+  #include_recipe 'create_a_web_app::lamp_customers'
   include_recipe 'create_a_web_app::wisa'
+  include_recipe 'create_a_web_app::wisa_customers'
 end
