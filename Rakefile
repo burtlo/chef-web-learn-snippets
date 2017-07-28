@@ -246,19 +246,9 @@ def find_platforms(scenario_path)
 end
 
 def find_scenarios
-  scenarios = []
-  Dir.foreach('scenarios') do |x|
-    path = File.join('scenarios', x)
-    if x.start_with? "."
-      next
-    elsif File.directory?(path)
-      scenarios.push ({
-        scenario: x,
-        platforms: find_platforms(path)
-      })
-    end
+  Dir['scenarios/*'].find_all { |path| File.directory?(path) }.map do |path|
+    { scenario: File.basename(path), platforms: find_platforms(path) }
   end
-  scenarios
 end
 
 class String
