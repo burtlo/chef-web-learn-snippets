@@ -230,19 +230,9 @@ def find_virtualizations(platform_path)
 end
 
 def find_platforms(scenario_path)
-  platforms = []
-  Dir.foreach(scenario_path) do |x|
-    path = File.join(scenario_path, x)
-    if x.start_with? "."
-      next
-    elsif File.directory?(path)
-      platforms.push ({
-        platform: x,
-        virtualizations: find_virtualizations(path)
-      })
-    end
+  Dir["#{scenario_path}/*"].find_all { |path| File.directory?(path) }.map do |path|
+    { platform: File.basename(path), virtualizations: find_virtualizations(path)  }
   end
-  platforms
 end
 
 def find_scenarios
