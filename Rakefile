@@ -217,16 +217,9 @@ def copy_files(from, to, level = 0)
 end
 
 def find_virtualizations(platform_path)
-  virtualizations = []
-  Dir.foreach(platform_path) do |x|
-    path = File.join(platform_path, x)
-    if x.start_with? "."
-      next
-    elsif File.directory?(path)
-      virtualizations.push x
-    end
+  Dir["#{platform_path}/*"].find_all { |path| File.directory?(path) }.map do |path|
+    File.basename(path)
   end
-  virtualizations
 end
 
 def find_platforms(scenario_path)
